@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lineup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --paper: #ECE1C4;
+  --paper-dark: #DED0A9;
+  --folder: #C9AE7C;
+  --ink: #232017;
+  --ink-soft: #524A38;
+  --red: #A33B2B;
+  --red-dark: #7E2B1F;
+  --gold: #99732E;
+  --gold-bg: #F2E3B9;
+  --olive: #4E6B4F;
+  --olive-dark: #37502F;
+  --olive-bg: #DDE6D6;
+  --red-bg: #EBD4CE;
+  --line: rgba(35,32,23,0.18);
+  --shadow: rgba(35,32,23,0.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse at 20% -10%, rgba(255,255,255,0.35), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(35,32,23,0.025) 0px, rgba(35,32,23,0.025) 1px, transparent 1px, transparent 3px),
+    var(--paper);
+  color:var(--ink);
+  font-family:'Source Serif 4', Georgia, serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;
+  justify-content:center;
+  padding:28px 16px 60px;
+}
+.wrap{width:100%;max-width:640px;}
+
+.masthead{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  border-bottom:3px double var(--ink);
+  padding-bottom:10px;
+  margin-bottom:22px;
+}
+.masthead h1{
+  font-family:'Special Elite', 'Courier New', monospace;
+  font-size:1.5rem;
+  letter-spacing:0.5px;
+  margin:0;
+  color:var(--ink);
+}
+.masthead .tag{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.68rem;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+
+.card{
+  background:var(--paper-dark);
+  border:1px solid var(--line);
+  border-radius:3px;
+  box-shadow:0 1px 0 rgba(255,255,255,0.4) inset, 0 10px 24px -14px var(--shadow);
+  padding:26px 24px;
+  position:relative;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  top:10px;left:10px;right:10px;bottom:10px;
+  border:1px dashed rgba(35,32,23,0.15);
+  pointer-events:none;
+}
+
+.folder-tab{
+  display:inline-block;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.7rem;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--paper);
+  background:var(--ink);
+  padding:4px 10px;
+  border-radius:2px 2px 0 0;
+  margin-bottom:-1px;
+  position:relative;
+  z-index:1;
+}
+.intro p{
+  font-size:0.98rem;
+  line-height:1.65;
+  color:var(--ink-soft);
+  margin:0 0 18px;
+}
+.intro strong{color:var(--ink);}
+.round-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  margin:18px 0 22px;
+}
+.round-btn{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.85rem;
+  letter-spacing:0.3px;
+  background:var(--paper);
+  border:1.5px solid var(--ink);
+  color:var(--ink);
+  padding:14px 8px;
+  border-radius:2px;
+  cursor:pointer;
+  text-align:center;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.round-btn .n{display:block;font-family:'Special Elite',monospace;font-size:1.25rem;margin-bottom:2px;}
+.round-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px -8px var(--shadow);}
+.round-btn.selected{background:var(--ink);color:var(--paper);}
+.round-btn:focus-visible{outline:3px solid var(--red);outline-offset:2px;}
+
+.primary-btn{
+  width:100%;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.95rem;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  background:var(--red);
+  color:var(--paper);
+  border:none;
+  padding:16px;
+  border-radius:2px;
+  cursor:pointer;
+  box-shadow:0 6px 0 var(--red-dark);
+  transition:transform .08s ease, box-shadow .08s ease;
+}
+.primary-btn:hover:not(:disabled){transform:translateY(2px);box-shadow:0 4px 0 var(--red-dark);}
+.primary-btn:active:not(:disabled){transform:translateY(6px);box-shadow:0 0 0 var(--red-dark);}
+.primary-btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
+.primary-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+.ghost-btn{
+  width:100%;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.82rem;
+  letter-spacing:0.8px;
+  text-transform:uppercase;
+  background:transparent;
+  color:var(--ink);
+  border:1.5px solid var(--ink);
+  padding:12px;
+  border-radius:2px;
+  cursor:pointer;
+  margin-top:10px;
+}
+.ghost-btn:hover{background:rgba(35,32,23,0.06);}
+.ghost-btn:focus-visible{outline:3px solid var(--red);outline-offset:2px;}
+
+.statline{
+  display:flex;
+  justify-content:space-between;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.72rem;
+  letter-spacing:0.8px;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  margin-bottom:8px;
+}
+.progress-track{
+  height:5px;
+  background:rgba(35,32,23,0.12);
+  border-radius:3px;
+  overflow:hidden;
+  margin-bottom:20px;
+}
+.progress-fill{
+  height:100%;
+  background:var(--gold);
+  transition:width .3s ease;
+}
+
+.case-no{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.7rem;
+  letter-spacing:1.5px;
+  color:var(--red);
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.word-display{
+  font-family:'Special Elite', 'Courier New', monospace;
+  font-size:2.5rem;
+  line-height:1.1;
+  color:var(--ink);
+  margin:2px 0 4px;
+  word-break:break-word;
+}
+.prompt-line{
+  font-size:0.92rem;
+  color:var(--ink-soft);
+  margin-bottom:18px;
+  border-top:1px dashed var(--line);
+  padding-top:14px;
+}
+.prompt-line strong{color:var(--ink);}
+
+.lineup{
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+.suspect{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  text-align:left;
+  background:var(--paper);
+  border:1.5px solid var(--line);
+  border-radius:2px;
+  padding:12px 14px;
+  cursor:pointer;
+  font-family:'Source Serif 4', Georgia, serif;
+  font-size:0.93rem;
+  color:var(--ink);
+  transition:border-color .12s ease, background .12s ease;
+  width:100%;
+}
+.suspect:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.checkbox{
+  flex:0 0 auto;
+  width:20px;height:20px;
+  border:2px solid var(--ink-soft);
+  border-radius:3px;
+  margin-top:1px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.75rem;
+  color:transparent;
+  background:var(--paper);
+}
+.suspect.checked .checkbox{
+  background:var(--ink);
+  border-color:var(--ink);
+  color:var(--paper);
+}
+.suspect.checked .checkbox::after{content:"✓";}
+.suspect:hover:not(.locked){border-color:var(--ink);}
+.suspect .pos{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.72rem;
+  color:var(--gold);
+  font-weight:600;
+  margin-right:4px;
+}
+.suspect .zh{color:var(--ink-soft);font-size:0.83rem;}
+.suspect .ex-blank{
+  display:block;
+  margin-top:4px;
+  font-style:italic;
+  color:var(--ink-soft);
+  font-size:0.82rem;
+  opacity:0.85;
+}
+
+.suspect.locked{cursor:default;}
+.suspect.res-hit{background:var(--olive-bg);border-color:var(--olive);}
+.suspect.res-hit .checkbox{background:var(--olive-dark);border-color:var(--olive-dark);}
+.suspect.res-falselead{background:var(--red-bg);border-color:var(--red);}
+.suspect.res-falselead .checkbox{background:var(--red-dark);border-color:var(--red-dark);}
+.suspect.res-missed{background:var(--gold-bg);border-color:var(--gold);}
+.suspect.res-missed .checkbox{background:transparent;border-color:var(--gold);color:var(--gold);}
+.suspect.res-missed .checkbox::after{content:"!";color:var(--gold);}
+.suspect.res-correctreject{opacity:0.55;}
+
+.tag-note{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.66rem;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  margin-top:3px;
+}
+.tag-note.hit{color:var(--olive-dark);}
+.tag-note.false{color:var(--red-dark);}
+.tag-note.missed{color:var(--gold);}
+
+.submit-row{margin-top:20px;}
+.next-row{margin-top:12px;}
+
+.result-banner{
+  margin-top:16px;
+  font-family:'Special Elite', monospace;
+  font-size:1.1rem;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  text-align:center;
+  padding:10px;
+  border:2px solid var(--olive-dark);
+  color:var(--olive-dark);
+  border-radius:4px;
+}
+.result-banner.partial{border-color:var(--gold);color:var(--gold);}
+.result-banner.miss{border-color:var(--red-dark);color:var(--red-dark);}
+
+.score-hero{
+  text-align:center;
+  padding:10px 0 20px;
+  border-bottom:1px dashed var(--line);
+  margin-bottom:18px;
+}
+.score-hero .big{
+  font-family:'Special Elite', monospace;
+  font-size:3rem;
+  color:var(--ink);
+}
+.score-hero .of{font-family:'IBM Plex Mono', monospace;font-size:1.1rem;color:var(--ink-soft);}
+.score-hero .verdict{
+  margin-top:6px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.75rem;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--red-dark);
+}
+.stat-row{
+  display:flex;
+  justify-content:space-around;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.75rem;
+  color:var(--ink-soft);
+  margin-bottom:18px;
+  text-transform:uppercase;
+  letter-spacing:0.4px;
+}
+.stat-row div{text-align:center;}
+.stat-row .v{display:block;font-family:'Special Elite',monospace;font-size:1.3rem;color:var(--ink);}
+
+.missed-list{
+  list-style:none;
+  margin:0 0 18px;
+  padding:0;
+  max-height:300px;
+  overflow-y:auto;
+}
+.missed-list li{
+  padding:10px 0;
+  border-bottom:1px solid var(--line);
+  font-size:0.9rem;
+}
+.missed-list .mw{font-family:'IBM Plex Mono', monospace;font-weight:600;color:var(--red-dark);display:block;margin-bottom:4px;}
+.missed-list .mp{color:var(--gold);font-family:'IBM Plex Mono', monospace;font-size:0.75rem;}
+.missed-list .mcount{color:var(--ink-soft);font-family:'IBM Plex Mono', monospace;font-size:0.75rem;}
+.missed-list .md{color:var(--ink-soft);display:block;margin-top:2px;font-size:0.85rem;}
+.missed-list .ms{display:block;margin:2px 0;color:var(--ink-soft);font-size:0.85rem;}
+.missed-list .ms .p{color:var(--gold);font-family:'IBM Plex Mono', monospace;font-size:0.75rem;}
+.intro-p{
+  font-size:0.92rem;
+  line-height:1.6;
+  color:var(--ink-soft);
+  margin:0 0 16px;
+}
+.empty-missed{
+  text-align:center;
+  padding:20px 0;
+  color:var(--olive-dark);
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.85rem;
+  letter-spacing:0.5px;
+}
+
+.footer-note{
+  text-align:center;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.68rem;
+  letter-spacing:0.5px;
+  color:var(--ink-soft);
+  opacity:0.7;
+  margin-top:24px;
+}
+
+.hidden{display:none !important;}
+
+/* ---------- editor screen ---------- */
+.editor-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:10px;
+}
+.editor-search{
+  flex:1 1 160px;
+  font-family:'Source Serif 4', Georgia, serif;
+  font-size:0.9rem;
+  padding:10px 12px;
+  border:1.5px solid var(--ink);
+  border-radius:2px;
+  background:var(--paper);
+  color:var(--ink);
+}
+.editor-search:focus-visible{outline:3px solid var(--gold);outline-offset:1px;}
+.editor-toolbar-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.tool-btn{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.72rem;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  background:var(--paper);
+  border:1.5px solid var(--ink);
+  color:var(--ink);
+  padding:9px 12px;
+  border-radius:2px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.end-game-btn{
+  display:block;
+  width:100%;
+  text-align:center;
+  margin-top:16px;
+  padding:10px;
+  background:transparent;
+  border:none;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.72rem;
+  letter-spacing:0.6px;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  cursor:pointer;
+  opacity:0.7;
+}
+.end-game-btn:hover{opacity:1;color:var(--red-dark);}
+.end-game-btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+
+.home-reminder{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin:0 0 18px;
+  padding:12px 14px;
+  border:1.5px dashed var(--red);
+  border-radius:2px;
+  background:var(--red-bg);
+}
+.home-reminder-en, .home-reminder-zh{
+  font-size:0.85rem;
+  line-height:1.5;
+  color:var(--red-dark);
+}
+.home-reminder-zh{
+  font-size:0.83rem;
+}
+
+.toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:4px 0 18px;
+  padding:12px 14px;
+  border:1px dashed var(--line);
+  border-radius:2px;
+  background:var(--paper);
+}
+.toggle-label{
+  font-size:0.85rem;
+  color:var(--ink-soft);
+}
+.toggle-switch{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.72rem;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  padding:7px 16px;
+  border-radius:20px;
+  border:1.5px solid var(--ink);
+  background:var(--ink);
+  color:var(--paper);
+  cursor:pointer;
+  flex:0 0 auto;
+  min-width:52px;
+}
+.toggle-switch[aria-pressed="false"]{
+  background:transparent;
+  color:var(--ink-soft);
+  border-color:var(--ink-soft);
+}
+.toggle-switch:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.tool-btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.editor-meta{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.7rem;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  margin-bottom:14px;
+}
+.editor-list{
+  max-height:480px;
+  overflow-y:auto;
+  border-top:1px dashed var(--line);
+  margin-bottom:16px;
+}
+.editor-word-block{
+  border-bottom:1px solid var(--line);
+  padding:14px 2px;
+}
+.editor-word-head{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:8px;
+}
+.editor-word-input{
+  font-family:'Special Elite', 'Courier New', monospace;
+  font-size:1.1rem;
+  flex:1;
+  padding:8px 10px;
+  border:1.5px solid var(--line);
+  border-radius:2px;
+  background:var(--paper);
+  color:var(--ink);
+}
+.editor-word-input:focus-visible{outline:2px solid var(--gold);}
+.editor-del-word{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.68rem;
+  text-transform:uppercase;
+  background:transparent;
+  border:1.5px solid var(--red-dark);
+  color:var(--red-dark);
+  padding:8px 10px;
+  border-radius:2px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.editor-del-word:hover{background:var(--red-dark);color:var(--paper);}
+.sense-row{
+  display:grid;
+  grid-template-columns:64px 1fr 1fr 32px;
+  gap:6px;
+  margin-bottom:6px;
+  align-items:center;
+}
+.sense-row input{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.78rem;
+  padding:7px 8px;
+  border:1px solid var(--line);
+  border-radius:2px;
+  background:var(--paper-dark);
+  color:var(--ink);
+  width:100%;
+}
+.sense-row input.pos-input{font-weight:600;}
+.sense-row input.en-input,.sense-row input.example-input{font-family:'Source Serif 4', Georgia, serif;}
+.sense-row .example-input{grid-column:1 / 3;}
+.sense-row .zh-input{grid-column:3 / 4;}
+.sense-row .del-sense{
+  background:transparent;
+  border:none;
+  color:var(--red-dark);
+  font-size:1rem;
+  cursor:pointer;
+  padding:4px;
+}
+.sense-row .del-sense:hover{color:var(--red);}
+.add-sense-btn{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.68rem;
+  text-transform:uppercase;
+  background:transparent;
+  border:1px dashed var(--ink-soft);
+  color:var(--ink-soft);
+  padding:6px 10px;
+  border-radius:2px;
+  cursor:pointer;
+  margin-top:2px;
+}
+.add-sense-btn:hover{border-color:var(--ink);color:var(--ink);}
+.sense-labels{
+  display:grid;
+  grid-template-columns:64px 1fr 1fr 32px;
+  gap:6px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.6rem;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  margin-bottom:4px;
+}
+.sense-labels span:nth-child(2){grid-column:2/3;}
+
+@media (max-width:420px){
+  .word-display{font-size:2rem;}
+  .card{padding:20px 16px;}
+  .stat-row{flex-wrap:wrap;gap:10px;}
+  .sense-row{grid-template-columns:52px 1fr 28px;}
+  .sense-row .example-input{grid-column:1/3;}
+  .sense-row .zh-input{grid-column:1/3;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <h1>THE LINEUP</h1>
+    <span class="tag">Multi-Alias Roster · 200 Words</span>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup">
+    <span class="folder-tab">New Roster</span>
+    <div class="card intro">
+      <p>Every word on this roster has been living under <strong>more than one identity</strong>. You'll see one headword and a lineup of possible meanings — some genuinely belong to it, the rest are borrowed from other suspects. Check every meaning that actually belongs to the word, and only those.</p>
+      <div class="home-reminder">
+        <span class="home-reminder-en">⚠ Before you close this page, export your Mistake Log — your progress may not save automatically.</span>
+        <span class="home-reminder-zh">⚠ 關閉此頁面前，請務必匯出「錯題紀錄」——你的紀錄可能不會自動儲存。</span>
+      </div>
+      <p>Choose how many words to process:</p>
+      <div class="round-grid" id="round-grid"></div>
+      <div class="toggle-row">
+        <span class="toggle-label">Show Chinese definitions (中文釋義)</span>
+        <button class="toggle-switch" id="zh-toggle" type="button" aria-pressed="true">ON</button>
+      </div>
+      <button class="primary-btn" id="start-btn">Begin Roster</button>
+      <button class="ghost-btn" id="mistakes-btn">My Mistakes (0)</button>
+      <button class="ghost-btn" id="edit-db-btn">Edit Word Database</button>
+    </div>
+  </div>
+
+  <!-- MISTAKES SCREEN -->
+  <div id="screen-mistakes" class="hidden">
+    <span class="folder-tab">Repeat Offenders</span>
+    <div class="card">
+      <p class="intro-p">Every alias you overlook lands here. Meanings you keep missing float to the top — that's what's actually worth restudying.</p>
+      <div class="editor-meta" id="mistakes-meta"></div>
+      <div class="editor-meta" id="mistakes-storage-note" style="margin-top:-10px;"></div>
+      <ul class="missed-list" id="mistakes-list"></ul>
+      <div class="empty-missed hidden" id="mistakes-empty">No mistakes logged yet — go process some words.</div>
+      <button class="primary-btn hidden" id="practice-mistakes-btn">Practice My Mistakes</button>
+      <button class="ghost-btn" id="export-mistakes-btn">Export Mistake Log</button>
+      <button class="ghost-btn" id="import-mistakes-btn">Upload Mistake Log</button>
+      <input type="file" id="import-mistakes-file" accept="application/json" class="hidden">
+      <button class="ghost-btn" id="clear-mistakes-btn">Clear Log</button>
+      <button class="ghost-btn" id="mistakes-back-btn">← Back</button>
+    </div>
+  </div>
+
+  <!-- EDITOR SCREEN -->
+  <div id="screen-editor" class="hidden">
+    <span class="folder-tab">Archive Maintenance</span>
+    <div class="card">
+      <div class="editor-toolbar">
+        <input type="text" id="editor-search" class="editor-search" placeholder="Search words…">
+        <div class="editor-toolbar-btns">
+          <button class="tool-btn" id="add-word-btn">+ Add word</button>
+          <button class="tool-btn" id="export-xlsx-btn">Export Excel</button>
+          <button class="tool-btn" id="import-xlsx-btn">Import Excel</button>
+          <input type="file" id="import-xlsx-file" accept=".xlsx,.xls" class="hidden">
+        </div>
+      </div>
+      <div class="editor-meta" id="editor-meta"></div>
+      <div class="editor-list" id="editor-list"></div>
+      <button class="primary-btn" id="editor-done-btn">Done — Save &amp; Return</button>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="screen-game" class="hidden">
+    <div class="statline">
+      <span id="stat-progress">WORD 1 / 10</span>
+      <span id="stat-score">SOLVED 0</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+    <div class="card">
+      <div class="case-no" id="case-no">SUSPECT #001</div>
+      <div class="word-display" id="word-display">word</div>
+      <div class="prompt-line">Check <strong>every</strong> meaning below that this word can actually have. There may be more than one — or a trick option that doesn't belong at all.</div>
+      <div class="lineup" id="lineup"></div>
+      <div class="submit-row"><button class="primary-btn" id="submit-btn" disabled>Submit Lineup</button></div>
+      <div id="result-area"></div>
+      <div class="next-row hidden" id="next-row">
+        <button class="primary-btn" id="next-btn">Next Word →</button>
+      </div>
+    </div>
+    <button class="end-game-btn" id="end-game-btn" type="button">✕ End Game &amp; Return to Menu</button>
+  </div>
+
+  <!-- SUMMARY SCREEN -->
+  <div id="screen-summary" class="hidden">
+    <span class="folder-tab">Roster Report</span>
+    <div class="card">
+      <div class="score-hero">
+        <div><span class="big" id="final-score">0</span><span class="of" id="final-total"> / 10</span></div>
+        <div class="verdict" id="verdict">Reviewing evidence…</div>
+      </div>
+      <div class="stat-row">
+        <div><span class="v" id="stat-hits">0</span>Aliases found</div>
+        <div><span class="v" id="stat-missed">0</span>Overlooked</div>
+        <div><span class="v" id="stat-false">0</span>False leads</div>
+      </div>
+      <div id="missed-wrap">
+        <ul class="missed-list" id="missed-list"></ul>
+      </div>
+      <button class="primary-btn" id="review-btn">Reprocess Missed Words</button>
+      <button class="ghost-btn" id="restart-btn">Start New Roster</button>
+    </div>
+  </div>
+
+  <div class="footer-note">Built from 高中英文參考詞彙表 Levels 1–4 · 200 multi-meaning words</div>
+</div>
+
+<script id="vocab-data" type="application/json">[{"word":"book","senses":[{"pos":"n.","zh":"書","en":"a written work","example":"I borrowed three books."},{"pos":"v.","zh":"預訂","en":"to reserve in advance","example":"We booked a table for 7 PM."}]},{"word":"fine","senses":[{"pos":"adj.","zh":"好的；健康的","en":"acceptable, in good health","example":"\"How are you?\" \"I'm fine.\""},{"pos":"adj.","zh":"精緻的；細的","en":"delicate, high-quality, or thin","example":"fine china / fine print / fine hair"},{"pos":"v.","zh":"罰款","en":"to punish with a payment","example":"He was fined NT$1,200."}]},{"word":"address","senses":[{"pos":"n.","zh":"地址","en":"a location","example":"Please write your address here."},{"pos":"n.","zh":"演說","en":"a formal speech","example":"the President's address to the nation"},{"pos":"v.","zh":"處理；正視","en":"to deal with a problem","example":"The mayor addressed the housing crisis."},{"pos":"v.","zh":"對...說話","en":"to speak directly to someone","example":"He addressed the crowd."}]},{"word":"plant","senses":[{"pos":"n.","zh":"植物","en":"a living organism","example":"water the plant"},{"pos":"n.","zh":"工廠","en":"a factory","example":"a car assembly plant"},{"pos":"v.","zh":"種植","en":"to put in the ground to grow","example":"plant a tree"},{"pos":"v.","zh":"秘密安置","en":"to place something secretly","example":"Police believe the evidence was planted."}]},{"word":"capital","senses":[{"pos":"n.","zh":"資金","en":"money invested in a business","example":"The business tried to raise some capital"},{"pos":"n.","zh":"首都","en":"a country's main city","example":"Taipei is the capital of Taiwan."},{"pos":"adj.","zh":"死罪的","en":"punishable by death","example":"a capital offense"}]},{"word":"present","senses":[{"pos":"n.","zh":"禮物","en":"a gift","example":"She got a present for her sister."},{"pos":"n.","zh":"現在","en":"the current time (with \"the\")","example":"live in the present, not the past"},{"pos":"adj.","zh":"目前的","en":"current, existing now","example":"the present situation"},{"pos":"adj.","zh":"在場的","en":"attending, physically there","example":"Was he present at the meeting?"},{"pos":"v.","zh":"呈現；頒發","en":"to formally give or show","example":"The award was presented to the winner."}]},{"word":"object","senses":[{"pos":"n.","zh":"物體","en":"a physical thing","example":"There's an object on the table."},{"pos":"n.","zh":"目的","en":"a goal or purpose","example":"the object of the exercise"},{"pos":"v.","zh":"反對","en":"to express opposition","example":"The lawyer objected to the question."}]},{"word":"record","senses":[{"pos":"n.","zh":"紀錄；檔案","en":"a written account","example":"keep a record of expenses"},{"pos":"n.","zh":"最佳成績","en":"the best-known achievement","example":"She broke the world record."},{"pos":"n.","zh":"唱片","en":"a vinyl music disc","example":"an old jazz record"},{"pos":"v.","zh":"記錄；錄音錄影","en":"to write down or capture on audio/video","example":"Please record your answers."}]},{"word":"produce","senses":[{"pos":"v.","zh":"生產；製造","en":"to make or create","example":"The factory produces 500 units a day."},{"pos":"n.","zh":"農產品","en":"fresh fruits and vegetables","example":"The market sells fresh produce."}]},{"word":"permit","senses":[{"pos":"v.","zh":"允許","en":"to allow","example":"Smoking is not permitted here."},{"pos":"n.","zh":"許可證","en":"an official license","example":"You need a work permit."}]},{"word":"suspect","senses":[{"pos":"v.","zh":"懷疑","en":"to believe something is likely (esp. something bad)","example":"I suspect he's lying."},{"pos":"n.","zh":"嫌疑犯","en":"a person believed guilty of a crime","example":"Police arrested the suspect."},{"pos":"adj.","zh":"可疑的","en":"of doubtful truth or reliability","example":"His motives are suspect."}]},{"word":"content","senses":[{"pos":"n.","zh":"內容","en":"what is contained inside","example":"the content of the speech / the contents of the box"},{"pos":"adj.","zh":"滿足的","en":"satisfied","example":"She seemed content with her decision."}]},{"word":"figure","senses":[{"pos":"n.","zh":"數字","en":"a number","example":"Sales figures increased due to increased popularity."},{"pos":"n.","zh":"體型","en":"a body shape","example":"watch your figure"},{"pos":"n.","zh":"人物","en":"an important person","example":"a political figure"},{"pos":"v.","zh":"認為","en":"to think, to reckon","example":"I figured you'd be late."},{"pos":"v.","zh":"計算","en":"to calculate","example":"figure out the total cost"}]},{"word":"mean","senses":[{"pos":"v.","zh":"意指","en":"to signify","example":"What does this word mean?"},{"pos":"v.","zh":"打算","en":"to intend","example":"I meant to call you."},{"pos":"adj.","zh":"刻薄的","en":"unkind, cruel","example":"Don't be so mean to your brother."}]},{"word":"mind","senses":[{"pos":"n.","zh":"心智","en":"the intellect","example":"Keep an open mind."},{"pos":"v.","zh":"介意","en":"to object to, to be bothered by","example":"Would you mind closing the door?"},{"pos":"v.","zh":"照顧；留意","en":"to look after, or to pay attention to","example":"Mind the baby. / Mind the gap."}]},{"word":"fair","senses":[{"pos":"n.","zh":"市集；園遊會","en":"an event with stalls or rides","example":"the school science fair"},{"pos":"adj.","zh":"公平的","en":"just, reasonable","example":"That's not a fair decision."},{"pos":"adj.","zh":"淺色的","en":"light-colored (skin or hair)","example":"fair skin and blond hair"},{"pos":"adv.","zh":"公平地","en":"in a fair manner","example":"play fair"}]},{"word":"grave","senses":[{"pos":"n.","zh":"墳墓","en":"a burial place","example":"They visited his grave."},{"pos":"adj.","zh":"嚴重的","en":"very serious","example":"a grave mistake"}]},{"word":"novel","senses":[{"pos":"n.","zh":"小說","en":"a long fictional work","example":"She's writing her first novel."},{"pos":"adj.","zh":"新奇的","en":"new and original","example":"a novel approach"}]},{"word":"relative","senses":[{"pos":"n.","zh":"親戚","en":"a family member","example":"We're visiting relatives."},{"pos":"adj.","zh":"相對的","en":"considered in relation to something else","example":"the relative importance of the two issues"}]},{"word":"minor","senses":[{"pos":"adj.","zh":"較不重要的","en":"small, unimportant","example":"a minor problem"},{"pos":"n.","zh":"未成年人","en":"a person under 18","example":"Minors cannot buy alcohol."},{"pos":"v.","zh":"副修","en":"to study as a secondary subject","example":"She's minoring in French."}]},{"word":"major","senses":[{"pos":"adj.","zh":"重要的","en":"significant","example":"a major decision"},{"pos":"n.","zh":"主修科目","en":"a field of study","example":"Her major is psychology."},{"pos":"n.","zh":"少校","en":"a military rank","example":"He was promoted to major."},{"pos":"v.","zh":"主修","en":"to study as a main subject","example":"She's majoring in psychology."}]},{"word":"issue","senses":[{"pos":"n.","zh":"議題；問題","en":"a topic or problem","example":"a controversial issue"},{"pos":"n.","zh":"期刊某一期","en":"a single edition of a publication","example":"the March issue of the magazine"},{"pos":"v.","zh":"發行；發布","en":"to officially give out or publish","example":"The government issued a warning."}]},{"word":"term","senses":[{"pos":"n.","zh":"學期","en":"a school semester","example":"the fall term"},{"pos":"n.","zh":"用詞","en":"a word or expression","example":"a technical term"},{"pos":"n.","zh":"條件","en":"conditions of an agreement (usually plural)","example":"the terms of the contract"},{"pos":"v.","zh":"稱作","en":"to name or call","example":"This is termed a \"false economy.\""}]},{"word":"sentence","senses":[{"pos":"n.","zh":"句子","en":"a grammatical unit","example":"Write a complete sentence."},{"pos":"n.","zh":"刑期","en":"a legal punishment","example":"He received a five-year sentence."},{"pos":"v.","zh":"判刑","en":"to officially punish someone in court","example":"He was sentenced to five years."}]},{"word":"store","senses":[{"pos":"n.","zh":"商店","en":"a shop","example":"a grocery store"},{"pos":"n.","zh":"儲備","en":"a stock or supply","example":"a store of information"},{"pos":"v.","zh":"儲存","en":"to keep for later use","example":"Store the files in this folder."}]},{"word":"stick","senses":[{"pos":"n.","zh":"棍子","en":"a wooden rod","example":"a walking stick"},{"pos":"v.","zh":"黏住；堅持","en":"to become attached, or to stay committed","example":"Stick to your plan."},{"pos":"v.","zh":"刺；戳","en":"to poke or pierce","example":"stick a fork in it"}]},{"word":"suit","senses":[{"pos":"n.","zh":"套裝","en":"a matching jacket and trousers","example":"a business suit"},{"pos":"n.","zh":"訴訟","en":"a lawsuit","example":"file a suit against the company"},{"pos":"v.","zh":"適合","en":"to be convenient or appropriate for","example":"Does 3 PM suit you?"}]},{"word":"tip","senses":[{"pos":"n.","zh":"小費","en":"a gratuity","example":"leave a tip"},{"pos":"n.","zh":"建議","en":"a piece of advice","example":"a useful tip"},{"pos":"n.","zh":"尖端","en":"a pointed end","example":"the tip of the pencil"},{"pos":"v.","zh":"傾倒","en":"to overturn or tilt","example":"The boat tipped over."},{"pos":"v.","zh":"給小費","en":"to give a gratuity","example":"tip the waiter"}]},{"word":"tear","senses":[{"pos":"n.","zh":"眼淚 /tɪr/","en":"a drop from crying","example":"tears rolled down her face"},{"pos":"n.","zh":"裂縫 /tɛr/","en":"a rip","example":"a tear in my shirt"},{"pos":"v.","zh":"撕裂 /tɛr/","en":"to rip","example":"Be careful not to tear the paper."}]},{"word":"wind","senses":[{"pos":"n.","zh":"風 /wɪnd/","en":"moving air","example":"a strong wind"},{"pos":"v.","zh":"纏繞 /waɪnd/","en":"to turn or coil","example":"Wind the rope around the pole."}]},{"word":"row","senses":[{"pos":"n.","zh":"(一)排 /roʊ/","en":"a straight line of things","example":"a row of chairs"},{"pos":"n.","zh":"爭吵 /raʊ/ (英式)","en":"a loud argument","example":"They had a big row."},{"pos":"v.","zh":"划（船） /roʊ/","en":"to paddle a boat","example":"They rowed across the lake."}]},{"word":"spring","senses":[{"pos":"n.","zh":"春天","en":"the season","example":"in early spring"},{"pos":"n.","zh":"彈簧","en":"a coiled piece of metal","example":"a metal spring"},{"pos":"n.","zh":"泉水","en":"a natural water source","example":"a hot spring"},{"pos":"v.","zh":"跳躍","en":"to jump suddenly","example":"The cat sprang onto the table."}]},{"word":"well","senses":[{"pos":"n.","zh":"水井","en":"a hole dug for water","example":"an old well"},{"pos":"adj.","zh":"健康的","en":"in good health","example":"I don't feel well."},{"pos":"adv.","zh":"好地；熟練地","en":"skillfully or satisfactorily","example":"She sings well."}]},{"word":"swallow","senses":[{"pos":"n.","zh":"燕子","en":"a type of bird","example":"Swallows return every spring."},{"pos":"v.","zh":"吞嚥","en":"to swallow food or drink","example":"Swallow your pill with water."}]},{"word":"stroke","senses":[{"pos":"n.","zh":"中風","en":"a sudden, dangerous illness","example":"He had a stroke last year."},{"pos":"n.","zh":"泳姿","en":"a swimming style","example":"the breast stroke"},{"pos":"n.","zh":"幸運的一擊","en":"a single, notable occurrence","example":"a stroke of luck / a stroke of genius"},{"pos":"v.","zh":"輕撫","en":"to touch gently","example":"She stroked the dog's fur."}]},{"word":"strike","senses":[{"pos":"n.","zh":"罷工","en":"a work stoppage","example":"a labor strike"},{"pos":"v.","zh":"打擊","en":"to hit","example":"Lightning struck the tree."},{"pos":"v.","zh":"突然想到","en":"to occur to someone suddenly","example":"It struck me that he was lying."},{"pos":"v.","zh":"達成","en":"to reach or achieve, as in an agreement","example":"strike a deal / strike a balance"}]},{"word":"block","senses":[{"pos":"n.","zh":"街區","en":"a section of a city","example":"walk two blocks"},{"pos":"n.","zh":"塊狀物","en":"a solid piece","example":"a block of ice"},{"pos":"v.","zh":"阻擋","en":"to obstruct","example":"A car blocked the road."}]},{"word":"charge","senses":[{"pos":"n.","zh":"費用","en":"a cost","example":"There's no charge for delivery."},{"pos":"n.","zh":"指控","en":"a formal accusation","example":"a murder charge"},{"pos":"n.","zh":"負責；掌管","en":"responsibility or control","example":"Who's in charge here?"},{"pos":"v.","zh":"收費","en":"to bill someone","example":"They charge NT$100 for delivery."},{"pos":"v.","zh":"指控","en":"to formally accuse","example":"He was charged with theft."},{"pos":"v.","zh":"衝鋒","en":"to rush forward aggressively","example":"The bull charged at him."}]},{"word":"current","senses":[{"pos":"n.","zh":"水流；電流","en":"a flow of water or electricity","example":"a strong ocean current"},{"pos":"adj.","zh":"目前的","en":"happening now","example":"current events"}]},{"word":"pitch","senses":[{"pos":"n.","zh":"球場","en":"a sports field (esp. British English)","example":"a football pitch"},{"pos":"n.","zh":"音調","en":"the highness or lowness of a sound","example":"perfect pitch"},{"pos":"n.","zh":"推銷話術","en":"a persuasive presentation","example":"a sales pitch"},{"pos":"v.","zh":"投擲","en":"to throw","example":"He pitched the ball."},{"pos":"v.","zh":"搭（帳篷）","en":"to set up","example":"pitch a tent"},{"pos":"v.","zh":"推銷","en":"to present an idea persuasively","example":"pitch an idea to investors"}]},{"word":"plot","senses":[{"pos":"n.","zh":"情節","en":"a story's structure","example":"the plot of the novel"},{"pos":"n.","zh":"密謀","en":"a secret plan","example":"a plot to overthrow the government"},{"pos":"n.","zh":"地段","en":"a small piece of land","example":"a plot of land"},{"pos":"v.","zh":"密謀策劃","en":"to secretly plan","example":"They plotted against him."},{"pos":"v.","zh":"繪製（圖表）","en":"to mark points on a graph","example":"plot the data on a chart"}]},{"word":"draft","senses":[{"pos":"n.","zh":"草稿","en":"an early written version","example":"the first draft of the essay"},{"pos":"n.","zh":"徵兵","en":"compulsory military service","example":"he was called up in the draft"},{"pos":"n.","zh":"陣陣氣流","en":"a current of cool air indoors","example":"there's a draft under the door"},{"pos":"v.","zh":"起草","en":"to write a preliminary version","example":"She drafted the proposal."},{"pos":"v.","zh":"徵召","en":"to conscript into service, or (in sports) select a player","example":"He was drafted by the army."}]},{"word":"shift","senses":[{"pos":"n.","zh":"班次","en":"a work period","example":"the night shift"},{"pos":"n.","zh":"轉變","en":"a change","example":"a shift in public opinion"},{"pos":"v.","zh":"改變；移動","en":"to change or move","example":"Public opinion has shifted."}]},{"word":"stem","senses":[{"pos":"n.","zh":"莖","en":"the main stalk of a plant","example":"the stem of a flower"},{"pos":"v.","zh":"源自","en":"to originate from","example":"The problem stems from a lack of funding."},{"pos":"v.","zh":"遏止","en":"to stop something from spreading","example":"stem the bleeding"}]},{"word":"trip","senses":[{"pos":"n.","zh":"旅行","en":"a journey","example":"a business trip"},{"pos":"v.","zh":"絆倒","en":"to stumble","example":"She tripped over the wire."}]},{"word":"school","senses":[{"pos":"n.","zh":"學校","en":"an institution for learning","example":"elementary school"},{"pos":"n.","zh":"魚群","en":"a group of fish","example":"a school of fish"},{"pos":"v.","zh":"教訓；訓練","en":"to teach someone a firm lesson","example":"He was schooled in the art of negotiation."}]},{"word":"use","senses":[{"pos":"v.","zh":"使用 /juːz/","en":"to utilize","example":"You may use my pen."},{"pos":"n.","zh":"用途 /juːs/","en":"a purpose or function","example":"This tool has many uses."}]},{"word":"pool","senses":[{"pos":"n.","zh":"游泳池","en":"a swimming pool","example":"a public pool"},{"pos":"n.","zh":"一灘（液體）","en":"a small area of liquid","example":"a pool of water on the floor"},{"pos":"n.","zh":"共用資金／資源","en":"a shared fund or group","example":"a car pool"},{"pos":"v.","zh":"集合（資源）","en":"to combine resources","example":"Let's pool our money."}]},{"word":"iron","senses":[{"pos":"n.","zh":"鐵","en":"the metal","example":"made of iron"},{"pos":"n.","zh":"熨斗","en":"the appliance for pressing clothes","example":"turn on the iron"},{"pos":"v.","zh":"熨（燙）","en":"to press clothes","example":"I need to iron this shirt."},{"pos":"v.","zh":"解決（問題）","en":"to iron out difficulties","example":"iron out the details"}]},{"word":"cast","senses":[{"pos":"n.","zh":"演員陣容","en":"the actors in a play or film","example":"the cast of the movie"},{"pos":"n.","zh":"石膏繃帶","en":"a rigid support for a broken bone","example":"his arm is in a cast"},{"pos":"v.","zh":"投擲","en":"to throw","example":"cast a stone"},{"pos":"v.","zh":"投（票）","en":"to formally submit a vote","example":"cast your vote"},{"pos":"v.","zh":"選角","en":"to assign an actor to a role","example":"She was cast as the lead."}]},{"word":"alert","senses":[{"pos":"adj.","zh":"警覺的","en":"watchful","example":"Stay alert during the exam."},{"pos":"n.","zh":"警報","en":"a warning signal","example":"a flood alert"},{"pos":"v.","zh":"提醒；警告","en":"to warn someone of danger","example":"She alerted the police."}]},{"word":"associate","senses":[{"pos":"v.","zh":"聯想；交往","en":"to connect in the mind, or to spend time with","example":"I associate summer with the beach."},{"pos":"n.","zh":"同事；夥伴","en":"a colleague or partner","example":"a business associate"},{"pos":"adj.","zh":"副的","en":"junior in rank","example":"an associate professor"}]},{"word":"average","senses":[{"pos":"adj.","zh":"平均的；普通的","en":"typical, ordinary","example":"the average student"},{"pos":"n.","zh":"平均值","en":"the mean value","example":"The average was 75 points."},{"pos":"v.","zh":"平均達到","en":"to amount to on average","example":"Sales average NT$50,000 a month."}]},{"word":"bankrupt","senses":[{"pos":"adj.","zh":"破產的","en":"unable to pay debts","example":"The company went bankrupt."},{"pos":"v.","zh":"使破產","en":"to cause someone to lose all their money","example":"The lawsuit bankrupted him."},{"pos":"n.","zh":"破產者","en":"a person who is bankrupt","example":"He was declared a bankrupt."}]},{"word":"brief","senses":[{"pos":"adj.","zh":"簡短的","en":"short in duration","example":"a brief meeting"},{"pos":"n.","zh":"簡報；訴狀","en":"a set of instructions, or a legal document","example":"The lawyer prepared her brief."},{"pos":"v.","zh":"做簡報；告知","en":"to give someone key information before a task","example":"The team was briefed before the mission."}]},{"word":"chill","senses":[{"pos":"n.","zh":"寒意","en":"a feeling of coldness","example":"There's a chill in the air."},{"pos":"v.","zh":"使變冷；放輕鬆（口語）","en":"to cool something, or to relax","example":"Chill the wine. / Let's just chill tonight."},{"pos":"adj.","zh":"冷靜的（口語）","en":"relaxed, laid-back","example":"She's a very chill person."}]},{"word":"clean","senses":[{"pos":"adj.","zh":"乾淨的","en":"free of dirt","example":"a clean shirt"},{"pos":"v.","zh":"打掃","en":"to remove dirt","example":"Clean your room."},{"pos":"adv.","zh":"完全地（口語）","en":"completely","example":"I clean forgot about the meeting."}]},{"word":"clear","senses":[{"pos":"adj.","zh":"清楚的；晴朗的","en":"easy to understand, or free of clouds","example":"a clear explanation / a clear sky"},{"pos":"v.","zh":"清除；放晴","en":"to remove, or (of weather) to become clear","example":"Clear the table. / The sky is clearing."},{"pos":"adv.","zh":"完全地","en":"entirely","example":"stand clear of the doors"}]},{"word":"close","senses":[{"pos":"adj.","zh":"接近的；親密的","en":"near, or intimate","example":"We're close friends."},{"pos":"v.","zh":"關閉","en":"to shut","example":"Please close the window."},{"pos":"adv.","zh":"靠近地","en":"nearby","example":"Stay close to me."},{"pos":"n.","zh":"結束","en":"the end of something","example":"at the close of the meeting"}]},{"word":"concrete","senses":[{"pos":"n.","zh":"混凝土","en":"a building material","example":"a concrete wall"},{"pos":"adj.","zh":"具體的","en":"specific, not abstract","example":"We need concrete evidence."}]},{"word":"cool","senses":[{"pos":"adj.","zh":"涼爽的","en":"mildly cold","example":"a cool breeze"},{"pos":"v.","zh":"使冷卻；使平靜","en":"to lower temperature, or to calm down","example":"Cool down and think logically."},{"pos":"n.","zh":"鎮定","en":"composure","example":"He kept his cool under pressure."}]},{"word":"counter","senses":[{"pos":"n.","zh":"櫃檯","en":"a flat surface for service","example":"the checkout counter"},{"pos":"v.","zh":"反駁；反擊","en":"to respond to an argument or attack","example":"She countered his criticism."},{"pos":"adj./adv.","zh":"相反的／相反地","en":"opposing","example":"That runs counter to our policy."}]},{"word":"daily","senses":[{"pos":"adj.","zh":"每日的","en":"happening every day","example":"a daily routine"},{"pos":"adv.","zh":"每天地","en":"every day","example":"Take this medicine daily."},{"pos":"n.","zh":"日報","en":"a newspaper published every day","example":"a national daily"}]},{"word":"damp","senses":[{"pos":"adj.","zh":"潮濕的","en":"slightly wet","example":"a damp towel"},{"pos":"n.","zh":"濕氣","en":"moisture","example":"rising damp in the walls"}]},{"word":"dear","senses":[{"pos":"adj.","zh":"親愛的","en":"beloved; also used to address someone","example":"Dear Sir / Yes, dear."},{"pos":"adj.","zh":"昂貴的（英式）","en":"expensive","example":"That restaurant is quite dear."}]},{"word":"direct","senses":[{"pos":"adj.","zh":"直接的","en":"straight, not roundabout","example":"a direct flight"},{"pos":"v.","zh":"指導；導演","en":"to guide, or to oversee a film/play","example":"She directed the new movie."},{"pos":"adv.","zh":"直接地","en":"straight, without stopping","example":"The flight goes direct to Tokyo."}]},{"word":"double","senses":[{"pos":"adj.","zh":"兩倍的","en":"twice as much","example":"double the price"},{"pos":"v.","zh":"使加倍","en":"to make or become twice as much","example":"Sales doubled last year."},{"pos":"n.","zh":"兩倍","en":"twice the amount","example":"He earns double what I do."}]},{"word":"downtown","senses":[{"pos":"n.","zh":"市中心","en":"the central business area","example":"He works downtown."},{"pos":"adj.","zh":"市中心的","en":"located in the city center","example":"a downtown office"},{"pos":"adv.","zh":"往市中心","en":"toward the city center","example":"We're heading downtown."}]},{"word":"due","senses":[{"pos":"adj.","zh":"應得的","en":"deserved","example":"The villain will get the fate that is due to her."},{"pos":"adj.","zh":"到期的","en":"expected/owed","example":"The assignment is due Friday."},{"pos":"n.","zh":"應得之物（複數 dues）","en":"fees owed to a group","example":"pay your membership dues"}]},{"word":"equal","senses":[{"pos":"adj.","zh":"平等的；相等的","en":"having the same status or amount","example":"equal rights"},{"pos":"n.","zh":"同等地位的人","en":"a peer","example":"treat him as an equal"},{"pos":"v.","zh":"等於","en":"to be the same as","example":"Two plus two equals four."}]},{"word":"express","senses":[{"pos":"v.","zh":"表達","en":"to communicate a feeling or idea","example":"express your opinion"},{"pos":"adj.","zh":"快速的","en":"fast, non-stop","example":"an express train"},{"pos":"n.","zh":"快車","en":"a fast train or delivery service","example":"take the express"},{"pos":"adv.","zh":"快遞地","en":"by fast delivery","example":"send it express"}]},{"word":"extra","senses":[{"pos":"adj.","zh":"額外的","en":"more than usual","example":"extra time"},{"pos":"adv.","zh":"特別地","en":"especially","example":"extra strong coffee"},{"pos":"n.","zh":"額外的東西","en":"an added item","example":"an extra"},{"pos":"n.","zh":"臨時演員","en":"a background actor in film","example":"he worked as an extra"}]},{"word":"faint","senses":[{"pos":"adj.","zh":"微弱的","en":"weak, barely perceptible","example":"a faint smell"},{"pos":"v.","zh":"昏倒","en":"to lose consciousness","example":"She fainted from the heat."}]},{"word":"fake","senses":[{"pos":"adj.","zh":"假的","en":"not genuine","example":"a fake watch"},{"pos":"v.","zh":"偽造","en":"to forge something","example":"He faked his signature."},{"pos":"v.","zh":"假裝","en":"to pretend","example":"She faked a smile."},{"pos":"n.","zh":"贗品","en":"a forgery","example":"That painting is a fake."}]},{"word":"fancy","senses":[{"pos":"adj.","zh":"花俏的；高級的","en":"decorative, elaborate","example":"a fancy restaurant"},{"pos":"v.","zh":"想要；喜歡（英式口語）","en":"to want or be attracted to","example":"Do you fancy a coffee?"}]},{"word":"firm","senses":[{"pos":"n.","zh":"公司","en":"a business","example":"a law firm"},{"pos":"adj.","zh":"堅定的；牢固的","en":"resolute, or solid","example":"a firm handshake"},{"pos":"adv.","zh":"堅定地","en":"resolutely","example":"Stand firm and don't back down."}]},{"word":"fit","senses":[{"pos":"v.","zh":"適合；合身","en":"to be the right size or suitable","example":"Does this fit you?"},{"pos":"adj.","zh":"健康的","en":"physically healthy","example":"He's very fit."},{"pos":"adj.","zh":"合適的","en":"appropriate","example":"not fit for the job"},{"pos":"n.","zh":"發作","en":"a sudden attack (of anger, laughter, illness)","example":"a fit of rage"}]},{"word":"flat","senses":[{"pos":"adj.","zh":"平的；沒氣的","en":"level, or (of a drink/tire) lacking air/fizz","example":"a flat road / flat soda"},{"pos":"adv.","zh":"恰好地","en":"exactly","example":"ten seconds flat"},{"pos":"n.","zh":"公寓（英式）","en":"an apartment","example":"rent a flat"},{"pos":"n.","zh":"爆胎","en":"a flat tire","example":"get a flat"}]},{"word":"forward","senses":[{"pos":"adj.","zh":"向前的","en":"moving ahead","example":"forward planning"},{"pos":"v.","zh":"轉寄","en":"to send something on to another person","example":"forward the email"}]},{"word":"free","senses":[{"pos":"adj.","zh":"自由的","en":"not restricted","example":"a free country"},{"pos":"adj.","zh":"免費的","en":"costing nothing","example":"a free sample"},{"pos":"v.","zh":"釋放","en":"to release","example":"free the hostages"}]},{"word":"green","senses":[{"pos":"adj.","zh":"綠色的","en":"the color","example":"a green shirt"},{"pos":"adj.","zh":"環保的","en":"environmentally friendly","example":"green energy"},{"pos":"adj.","zh":"生疏的（口語）","en":"inexperienced","example":"a green employee"},{"pos":"n.","zh":"綠色","en":"the color","example":"dressed in green"}]},{"word":"hollow","senses":[{"pos":"adj.","zh":"空心的","en":"having an empty space inside","example":"a hollow tree"},{"pos":"adj.","zh":"空洞的；不誠懇的","en":"insincere, meaningless","example":"a hollow promise"},{"pos":"n.","zh":"凹處","en":"a small valley or dip","example":"a hollow in the ground"},{"pos":"v.","zh":"挖空","en":"to make hollow","example":"hollow out a pumpkin"}]},{"word":"ill","senses":[{"pos":"adj.","zh":"生病的","en":"unwell","example":"He's been ill."},{"pos":"adv.","zh":"不利地","en":"badly, poorly","example":"ill-prepared"}]},{"word":"initial","senses":[{"pos":"adj.","zh":"最初的","en":"first, at the beginning","example":"the initial cost"},{"pos":"n.","zh":"姓名首字母","en":"the first letter of a name","example":"sign your initials"}]},{"word":"key","senses":[{"pos":"n.","zh":"鑰匙","en":"a device for opening locks","example":"the front-door key"},{"pos":"n.","zh":"答案","en":"the solution to a puzzle or test","example":"the answer key"},{"pos":"n.","zh":"調（音樂）","en":"a musical scale","example":"in the key of C"},{"pos":"adj.","zh":"關鍵的","en":"essential, most important","example":"a key decision"},{"pos":"v.","zh":"輸入","en":"to type in (usually \"___ in\")","example":"key in your password"}]},{"word":"light","senses":[{"pos":"n.","zh":"光","en":"brightness","example":"turn on the light"},{"pos":"adj.","zh":"輕的","en":"not heavy","example":"a light bag"},{"pos":"adj.","zh":"明亮的","en":"bright","example":"a light room"},{"pos":"v.","zh":"點燃","en":"to ignite","example":"light the candle"},{"pos":"adv.","zh":"輕裝地","en":"with little luggage","example":"travel light"}]},{"word":"minus","senses":[{"pos":"prep.","zh":"減去","en":"subtracting","example":"ten minus three"},{"pos":"n.","zh":"負數","en":"a number below zero","example":"a temperature of minus five"},{"pos":"n.","zh":"缺點","en":"a drawback","example":"weigh the pluses and minuses"},{"pos":"adj.","zh":"負的；略低的","en":"below zero, or slightly lower than a grade","example":"minus five degrees / a B minus"}]},{"word":"near","senses":[{"pos":"prep./adv.","zh":"靠近","en":"close to, or nearby","example":"near the station"},{"pos":"adj.","zh":"接近的","en":"close in distance or time","example":"in the near future"},{"pos":"v.","zh":"接近","en":"to get closer to","example":"We're nearing the deadline."}]},{"word":"opposite","senses":[{"pos":"adj.","zh":"相反的","en":"completely different","example":"the opposite direction"},{"pos":"n.","zh":"相反的事物","en":"the reverse of something","example":"quite the opposite"},{"pos":"prep./adv.","zh":"在...對面／在對面","en":"facing something","example":"the store opposite the bank"}]},{"word":"perfect","senses":[{"pos":"adj.","zh":"完美的","en":"without fault","example":"a perfect score"},{"pos":"v.","zh":"使完美","en":"to make flawless through practice","example":"perfect your technique"}]},{"word":"post","senses":[{"pos":"n.","zh":"郵件（英式）","en":"mail","example":"check the post"},{"pos":"n.","zh":"職位","en":"a job","example":"apply for the post"},{"pos":"n.","zh":"柱子","en":"a vertical pole","example":"a fence post"},{"pos":"v.","zh":"郵寄（英式）","en":"to mail something","example":"post a letter"},{"pos":"v.","zh":"張貼","en":"to put up a notice, or share online","example":"post a photo"}]},{"word":"prompt","senses":[{"pos":"v.","zh":"促使","en":"to cause someone to act","example":"This prompted a change in policy."},{"pos":"adj.","zh":"迅速的","en":"done without delay","example":"a prompt reply"},{"pos":"n.","zh":"提示","en":"a cue, reminder, or instruction (e.g. to an actor, or typed into an AI tool)","example":"type your prompt"}]},{"word":"quiet","senses":[{"pos":"adj.","zh":"安靜的","en":"making little noise","example":"a quiet room"},{"pos":"n.","zh":"寧靜","en":"silence, calm","example":"the quiet of the countryside"},{"pos":"v.","zh":"使安靜","en":"to make calm or silent (usually \"____ down\")","example":"quiet the children down"}]},{"word":"roast","senses":[{"pos":"n.","zh":"烤肉","en":"a roasted piece of meat","example":"a Sunday roast"},{"pos":"adj.","zh":"烤過的","en":"cooked by roasting","example":"roast chicken"},{"pos":"v.","zh":"烘烤","en":"to cook with dry heat","example":"roast the vegetables"},{"pos":"v.","zh":"嘲諷（口語）","en":"to mock someone playfully","example":"They roasted him at the party."}]},{"word":"round","senses":[{"pos":"adj.","zh":"圓的","en":"circular","example":"a round table"},{"pos":"n.","zh":"一輪；一回合","en":"one part of a series","example":"the final round"}]},{"word":"spare","senses":[{"pos":"adj.","zh":"備用的；多餘的","en":"extra, kept in reserve","example":"a spare key"},{"pos":"v.","zh":"騰出","en":"to make available","example":"Can you spare five minutes?"},{"pos":"v.","zh":"饒恕","en":"to show mercy toward, not harm","example":"spare his life"},{"pos":"n.","zh":"備用品","en":"an extra item (e.g. a spare tire)","example":"keep a spare in the trunk"}]},{"word":"steady","senses":[{"pos":"adj.","zh":"穩定的","en":"not shaking or changing","example":"a steady job"},{"pos":"v.","zh":"使穩定","en":"to make stable","example":"steady the ladder"}]},{"word":"account","senses":[{"pos":"n.","zh":"帳戶","en":"a bank account","example":"open an account"},{"pos":"n.","zh":"說明；描述","en":"an explanation or description of events","example":"give an account of what happened"},{"pos":"v.","zh":"說明；佔（比例）","en":"to explain (___ for), or to make up a proportion","example":"Tourism accounts for 20% of income."}]},{"word":"act","senses":[{"pos":"n.","zh":"行為","en":"an action","example":"an act of kindness"},{"pos":"n.","zh":"（戲劇的）幕","en":"a chapter of a play","example":"Act Two"},{"pos":"v.","zh":"表演","en":"to perform","example":"act in a play"},{"pos":"v.","zh":"行動；假裝","en":"to behave, or to pretend","example":"Stop acting like a child."}]},{"word":"advance","senses":[{"pos":"n.","zh":"進步","en":"progress","example":"advances in technology"},{"pos":"n.","zh":"預付款","en":"money paid before it's due","example":"He asked for an advance on his salary."},{"pos":"v.","zh":"前進；促進","en":"to move forward, or to help something progress","example":"advance the project"}]},{"word":"aid","senses":[{"pos":"n.","zh":"幫助","en":"assistance","example":"first aid"},{"pos":"n.","zh":"輔助器材","en":"a device that helps","example":"a hearing aid"},{"pos":"v.","zh":"幫助","en":"to help","example":"aid the recovery"}]},{"word":"aim","senses":[{"pos":"n.","zh":"目標","en":"a purpose","example":"the aim of the project"},{"pos":"n.","zh":"瞄準","en":"the act of pointing a weapon","example":"Her aim with a gun is good."},{"pos":"v.","zh":"瞄準","en":"to point a weapon or object","example":"aim the camera"},{"pos":"v.","zh":"打算","en":"to intend","example":"We aim to finish by Friday."}]},{"word":"alarm","senses":[{"pos":"n.","zh":"警報器","en":"a warning device","example":"a fire alarm"},{"pos":"n.","zh":"驚恐","en":"fear or anxiety","example":"she looked at him in alarm"},{"pos":"v.","zh":"使驚恐","en":"to frighten","example":"The news alarmed everyone."}]},{"word":"amount","senses":[{"pos":"n.","zh":"數量","en":"a quantity","example":"a large amount of money"},{"pos":"v.","zh":"總計；等同於","en":"to add up to, or to be equivalent to","example":"This amounts to fraud."}]},{"word":"answer","senses":[{"pos":"n.","zh":"回答","en":"a reply","example":"give an answer"},{"pos":"n.","zh":"解答","en":"a solution","example":"the answer to the problem"},{"pos":"v.","zh":"回答","en":"to reply","example":"answer the question"},{"pos":"v.","zh":"負責","en":"to be accountable (\"____ for\")","example":"You'll have to answer for this."}]},{"word":"appeal","senses":[{"pos":"n.","zh":"請求","en":"a serious request","example":"an appeal for donations"},{"pos":"n.","zh":"吸引力","en":"attractiveness","example":"the movie's appeal"},{"pos":"v.","zh":"懇求","en":"to formally request","example":"appeal for calm"},{"pos":"v.","zh":"吸引","en":"to attract or interest","example":"This doesn't appeal to me."}]},{"word":"approach","senses":[{"pos":"n.","zh":"方法","en":"a method","example":"a new approach to teaching"},{"pos":"n.","zh":"靠近","en":"the act of coming nearer","example":"the approach of winter"},{"pos":"v.","zh":"接近；接洽","en":"to come near, or to speak to someone about something","example":"approach the topic carefully"}]},{"word":"arm","senses":[{"pos":"n.","zh":"手臂","en":"the body part","example":"break your arm"},{"pos":"n.","zh":"武器（複數 ___s）","en":"weapons","example":"the arms trade"},{"pos":"v.","zh":"武裝","en":"to equip with weapons","example":"arm the soldiers"}]},{"word":"arrest","senses":[{"pos":"n.","zh":"逮捕","en":"detention by police","example":"make an arrest"},{"pos":"v.","zh":"逮捕","en":"to detain by police","example":"He was arrested."}]},{"word":"attack","senses":[{"pos":"n./v.","zh":"攻擊","en":"an assault","example":"a terrorist attack"},{"pos":"v.","zh":"抨擊","en":"to criticize strongly","example":"The senator attacked the new policy."}]},{"word":"attempt","senses":[{"pos":"v.","zh":"嘗試","en":"try to","example":"attempt to open the box"},{"pos":"n.","zh":"嘗試","en":"a try","example":"make an attempt"}]},{"word":"author","senses":[{"pos":"n.","zh":"作者","en":"a writer","example":"the author of the book"},{"pos":"v.","zh":"撰寫","en":"to write or create","example":"he authored several reports"}]},{"word":"award","senses":[{"pos":"n.","zh":"獎項","en":"a prize","example":"win an award"},{"pos":"v.","zh":"頒發","en":"to officially give","example":"award a prize"}]},{"word":"balance","senses":[{"pos":"n.","zh":"平衡","en":"equilibrium","example":"lose your balance"},{"pos":"n.","zh":"餘額","en":"the amount remaining in an account","example":"check your balance"},{"pos":"v.","zh":"使平衡","en":"to keep steady, or to make equal","example":"balance the budget"}]},{"word":"bar","senses":[{"pos":"n.","zh":"酒吧","en":"a place serving drinks","example":"go to a bar"},{"pos":"n.","zh":"條狀物","en":"a rod or block","example":"a bar of soap"},{"pos":"v.","zh":"禁止；阻擋","en":"to prohibit or block","example":"bar the door"}]},{"word":"bargain","senses":[{"pos":"n.","zh":"協議","en":"a deal","example":"strike a bargain"},{"pos":"n.","zh":"便宜貨","en":"something bought cheaply","example":"This coat was a bargain."},{"pos":"v.","zh":"討價還價","en":"to negotiate","example":"to bargain for a lower price"}]},{"word":"bark","senses":[{"pos":"n./v.","zh":"吠叫（聲）","en":"a dog's sound","example":"the dog's bark"},{"pos":"n.","zh":"樹皮","en":"a tree's outer covering","example":"tree bark"}]},{"word":"base","senses":[{"pos":"n.","zh":"基地；基礎","en":"a foundation, or a military base","example":"an army base"},{"pos":"v.","zh":"以...為根據","en":"to found something on","example":"be based on true events"}]},{"word":"battle","senses":[{"pos":"n.","zh":"戰役","en":"a fight","example":"the battle of Waterloo"},{"pos":"v.","zh":"奮戰","en":"to fight or struggle","example":"battle against illness"}]},{"word":"beam","senses":[{"pos":"n.","zh":"橫樑","en":"a wooden or metal support","example":"a wooden beam"},{"pos":"n.","zh":"光束","en":"a ray of light","example":"a beam of light"},{"pos":"v.","zh":"微笑；發光","en":"to smile broadly, or to shine","example":"She beamed with pride."}]},{"word":"bear","senses":[{"pos":"n.","zh":"熊","en":"the animal","example":"a brown bear"},{"pos":"v.","zh":"承受；忍受","en":"to carry weight, or to endure","example":"I can't bear the pain."},{"pos":"v.","zh":"生（孩子）","en":"to give birth to","example":"bear a child"}]},{"word":"beat","senses":[{"pos":"v.","zh":"打","en":"to hit repeatedly","example":"beat a drum"},{"pos":"v.","zh":"打敗","en":"to defeat","example":"beat the champion"},{"pos":"n.","zh":"節拍","en":"a rhythm","example":"the beat of the music"}]},{"word":"bend","senses":[{"pos":"v.","zh":"彎曲","en":"to curve or fold","example":"bend the wire"},{"pos":"n.","zh":"彎道","en":"a curve, especially in a road","example":"a sharp bend"}]},{"word":"benefit","senses":[{"pos":"v.","zh":"受益","en":"to gain an advantage","example":"to benefit from experience"},{"pos":"n.","zh":"好處","en":"an advantage","example":"There are great benefits to this job."}]},{"word":"bill","senses":[{"pos":"n.","zh":"帳單","en":"an invoice","example":"pay the bill"},{"pos":"n.","zh":"法案","en":"a proposed law","example":"pass a bill in Congress"},{"pos":"n.","zh":"紙鈔（美式）","en":"a banknote","example":"a ten-dollar bill"},{"pos":"v.","zh":"開帳單","en":"to invoice someone","example":"bill the client"}]},{"word":"blame","senses":[{"pos":"v.","zh":"責怪","en":"to hold responsible for a fault","example":"Don't blame me."},{"pos":"n.","zh":"責任；過錯","en":"responsibility for a fault","example":"take the blame"}]},{"word":"blank","senses":[{"pos":"adj.","zh":"空白的","en":"empty","example":"a blank page"},{"pos":"n.","zh":"空格","en":"an empty space","example":"fill in the blank"}]},{"word":"blanket","senses":[{"pos":"n.","zh":"毯子","en":"a bed covering","example":"a warm blanket"},{"pos":"adj.","zh":"全面的","en":"covering everything","example":"a blanket ban"},{"pos":"v.","zh":"覆蓋","en":"to cover completely","example":"snow blanketed the town"}]},{"word":"blend","senses":[{"pos":"v.","zh":"混合","en":"to mix","example":"blend the ingredients"},{"pos":"n.","zh":"混合物","en":"a mixture","example":"a blend of coffee"}]},{"word":"blind","senses":[{"pos":"adj.","zh":"失明的","en":"unable to see","example":"blind in one eye"},{"pos":"v.","zh":"使失明","en":"to make unable to see","example":"to be blinded by the light"},{"pos":"n.","zh":"窗簾","en":"a window covering","example":"pull down the blinds"}]},{"word":"bloom","senses":[{"pos":"n.","zh":"花","en":"a flower","example":"a rose in full bloom"},{"pos":"v.","zh":"開花；興盛","en":"to flower, or to flourish","example":"their friendship bloomed"}]},{"word":"board","senses":[{"pos":"n.","zh":"木板","en":"a flat piece of wood","example":"a wooden board"},{"pos":"n.","zh":"委員會","en":"a group that runs an organization","example":"the board of directors"},{"pos":"v.","zh":"上（車、船、飛機）","en":"to get on a vehicle","example":"board the plane"},{"pos":"v.","zh":"用木板封住","en":"to cover with boards","example":"board up the windows"}]},{"word":"boast","senses":[{"pos":"v.","zh":"吹噓","en":"to brag","example":"He boasted about his new car."},{"pos":"v.","zh":"擁有（值得誇耀的東西）","en":"to possess something impressive","example":"The hotel boasts a rooftop pool."}]},{"word":"bomb","senses":[{"pos":"n.","zh":"炸彈","en":"an explosive device","example":"a bomb went off"},{"pos":"v.","zh":"轟炸","en":"to attack with bombs","example":"the city was bombed"},{"pos":"v.","zh":"徹底失敗（口語）","en":"to fail badly","example":"The movie bombed at the box office."}]},{"word":"bond","senses":[{"pos":"n.","zh":"情誼；聯繫","en":"a connection between people","example":"a close bond"},{"pos":"n.","zh":"債券","en":"a financial security","example":"government bonds"},{"pos":"v.","zh":"建立聯繫","en":"to form a close relationship","example":"to bond with your teammates"}]},{"word":"boot","senses":[{"pos":"n.","zh":"靴子","en":"a type of footwear","example":"hiking boots"},{"pos":"v.","zh":"開機；踢","en":"to start up, or to kick","example":"to boot up the computer"}]},{"word":"border","senses":[{"pos":"n.","zh":"邊界","en":"a boundary between countries","example":"to cross the border"},{"pos":"v.","zh":"與...接壤","en":"to be next to","example":"Canada borders the U.S."}]},{"word":"bore","senses":[{"pos":"v.","zh":"使無聊","en":"to make someone uninterested","example":"This movie bores me."},{"pos":"v.","zh":"鑽（孔）","en":"to drill a hole","example":"to bore a hole in the wall"},{"pos":"n.","zh":"令人厭煩的人","en":"a boring person","example":"He's such a bore."}]},{"word":"bother","senses":[{"pos":"v.","zh":"打擾","en":"to annoy","example":"Don't bother me."},{"pos":"v.","zh":"費心","en":"to make the effort","example":"Don't bother replying to scam emails."},{"pos":"n.","zh":"麻煩","en":"trouble","example":"It's no bother."}]},{"word":"bottle","senses":[{"pos":"n.","zh":"瓶子","en":"a container","example":"a bottle of water"},{"pos":"v.","zh":"裝瓶；壓抑（情緒）","en":"to put into a bottle, or (bottle up) to suppress emotions","example":"Don't bottle up your feelings."}]},{"word":"bottom","senses":[{"pos":"n.","zh":"底部","en":"the lowest part","example":"the bottom of the sea"},{"pos":"adj.","zh":"最底部的","en":"lowest","example":"the bottom shelf"}]},{"word":"bow","senses":[{"pos":"n.","zh":"蝴蝶結；弓","en":"a ribbon tied in a knot, or a weapon for shooting arrows","example":"tie a bow"},{"pos":"n.","zh":"船頭","en":"the front of a ship","example":"stand at the bow"},{"pos":"v.","zh":"鞠躬","en":"to bend at the waist as a sign of respect","example":"bow to the audience"}]},{"word":"box","senses":[{"pos":"n.","zh":"盒子","en":"a container","example":"a cardboard box"},{"pos":"n.","zh":"打耳光（英式）","en":"a slap","example":"box someone's ears"},{"pos":"v.","zh":"拳擊","en":"to fight with fists","example":"learn to box"}]},{"word":"brake","senses":[{"pos":"n.","zh":"煞車","en":"a device that stops a vehicle","example":"hit the brakes"},{"pos":"v.","zh":"煞車","en":"to slow or stop a vehicle","example":"brake suddenly"}]},{"word":"branch","senses":[{"pos":"n.","zh":"樹枝","en":"a tree limb","example":"a branch of the tree"},{"pos":"n.","zh":"分店；分支","en":"a division of a company or field","example":"a bank branch"},{"pos":"v.","zh":"分岔；拓展","en":"to branch out, to expand into new areas","example":"the company branched into software"}]},{"word":"break","senses":[{"pos":"v.","zh":"打破；違反","en":"to shatter, or to violate a rule","example":"break the window / break the law"},{"pos":"n.","zh":"休息","en":"a pause or rest","example":"take a break"}]},{"word":"breeze","senses":[{"pos":"n.","zh":"微風","en":"a light wind","example":"a cool breeze"},{"pos":"v.","zh":"輕鬆通過","en":"to move somewhere easily and confidently","example":"She breezed through the exam."}]},{"word":"broadcast","senses":[{"pos":"v.","zh":"廣播","en":"to transmit","example":"to broadcast the news"},{"pos":"n.","zh":"廣播","en":"a transmission on TV/radio","example":"a live broadcast on TV"}]},{"word":"brush","senses":[{"pos":"n.","zh":"刷子","en":"a tool for hair, paint, etc.","example":"a hair brush"},{"pos":"n.","zh":"短暫的接觸／經歷","en":"a brief encounter","example":"a brush with death"},{"pos":"v.","zh":"刷","en":"to clean or apply with a brush","example":"to brush your teeth"}]},{"word":"bubble","senses":[{"pos":"n.","zh":"泡泡","en":"a sphere of gas in liquid","example":"soap bubbles"},{"pos":"v.","zh":"冒泡；洋溢","en":"to form bubbles, or to be full of an emotion","example":"bubbling with excitement"}]},{"word":"budget","senses":[{"pos":"n.","zh":"預算","en":"a financial plan","example":"stick to a budget"},{"pos":"adj.","zh":"廉價的","en":"inexpensive","example":"a budget hotel"},{"pos":"v.","zh":"編列預算","en":"to plan finances carefully","example":"to budget for the trip"}]},{"word":"bug","senses":[{"pos":"n.","zh":"昆蟲","en":"an insect","example":"a bug on the wall"},{"pos":"n.","zh":"程式錯誤","en":"a flaw in software","example":"fix the bug"},{"pos":"n.","zh":"竊聽器","en":"a hidden microphone","example":"plant a bug"},{"pos":"v.","zh":"使煩惱；竊聽","en":"to annoy, or to secretly install a listening device","example":"Stop bugging me."}]},{"word":"bump","senses":[{"pos":"n.","zh":"腫塊","en":"a small swelling","example":"a bump on his head"},{"pos":"v.","zh":"碰撞","en":"to hit accidentally","example":"bump into someone"}]},{"word":"burden","senses":[{"pos":"n.","zh":"負擔","en":"a heavy load or responsibility","example":"a financial burden"},{"pos":"v.","zh":"使負擔","en":"to load with a heavy responsibility","example":"to burden someone with debt"}]},{"word":"burst","senses":[{"pos":"v.","zh":"爆裂","en":"to explode or break open suddenly","example":"the balloon burst"},{"pos":"n.","zh":"爆發","en":"a sudden outbreak","example":"a burst of laughter"}]},{"word":"cage","senses":[{"pos":"n.","zh":"籠子","en":"an enclosure","example":"a bird cage"},{"pos":"v.","zh":"關進籠子","en":"to put in a cage","example":"to cage the animal"}]},{"word":"campaign","senses":[{"pos":"n.","zh":"活動","en":"an organized effort","example":"an election campaign"},{"pos":"v.","zh":"從事活動","en":"to run a campaign","example":"to campaign for equal rights"}]},{"word":"capture","senses":[{"pos":"v.","zh":"捕獲","en":"to catch","example":"to capture the escaped prisoner"},{"pos":"v.","zh":"捕捉（畫面、感覺）","en":"to record or represent something well","example":"the photo captures the moment"}]},{"word":"cause","senses":[{"pos":"n.","zh":"原因","en":"a reason something happens","example":"the cause of the fire"},{"pos":"n.","zh":"理念；目標","en":"a goal or movement worth supporting","example":"fight for a good cause"},{"pos":"v.","zh":"導致","en":"to make something happen","example":"to cause damage"}]},{"word":"cave","senses":[{"pos":"n.","zh":"洞穴","en":"a hollow space in rock","example":"to explore a cave"},{"pos":"v.","zh":"崩塌；讓步","en":"to collapse (___ in), or to give in to pressure","example":"he caved in to their demands"}]},{"word":"chain","senses":[{"pos":"n.","zh":"鎖鏈","en":"linked metal rings","example":"a gold chain"},{"pos":"n.","zh":"連鎖店；系列","en":"a series of stores or events","example":"IBIS is a popular hotel chain found everywhere."},{"pos":"v.","zh":"用鏈子拴住","en":"to fasten with a chain","example":"to chain the bike to the rail"}]},{"word":"challenge","senses":[{"pos":"n.","zh":"挑戰","en":"a difficult task","example":"to face a challenge"},{"pos":"v.","zh":"質疑","en":"to question the truth or authority of something","example":"to challenge his decision"}]},{"word":"channel","senses":[{"pos":"n.","zh":"頻道","en":"a TV/radio station","example":"change the channel"},{"pos":"n.","zh":"海峽；水道","en":"a stretch of water","example":"the English Channel"},{"pos":"v.","zh":"引導","en":"to direct something toward a goal","example":"to channel your energy into work"}]},{"word":"charm","senses":[{"pos":"n.","zh":"魅力","en":"attractiveness","example":"natural charm"},{"pos":"n.","zh":"護身符","en":"a small decorative trinket","example":"a lucky charm"},{"pos":"v.","zh":"迷住","en":"to attract or please","example":"to charm the audience"}]},{"word":"chase","senses":[{"pos":"v.","zh":"追逐","en":"to pursue","example":"to chase the thief"},{"pos":"n.","zh":"追逐","en":"the act of pursuit","example":"a car chase"}]},{"word":"cheat","senses":[{"pos":"v.","zh":"欺騙；作弊","en":"to act dishonestly","example":"to cheat on a test"},{"pos":"n.","zh":"騙子","en":"a person who cheats","example":"he's a cheat"}]},{"word":"cheer","senses":[{"pos":"v.","zh":"歡呼","en":"to shout in support","example":"the crowd cheered"},{"pos":"v.","zh":"使高興（____ up）","en":"to become or make happier","example":"Cheer up!"},{"pos":"n.","zh":"歡呼聲","en":"a shout of support","example":"give three cheers"}]},{"word":"chip","senses":[{"pos":"n.","zh":"碎片","en":"a small broken piece","example":"a chip of wood"},{"pos":"n.","zh":"洋芋片／晶片","en":"a potato chip, or a computer chip","example":"a bag of chips"},{"pos":"v.","zh":"缺角；剝落","en":"to break a small piece off","example":"to chip the plate"}]},{"word":"choke","senses":[{"pos":"v.","zh":"窒息","en":"to struggle to breathe","example":"to choke on food"},{"pos":"v.","zh":"關鍵時刻失常（口語）","en":"to fail badly under pressure","example":"he choked in the final"}]},{"word":"chop","senses":[{"pos":"v.","zh":"用力砍","en":"to cut with a heavy blow","example":"to chop the wood"},{"pos":"n.","zh":"肉排","en":"a cut of meat","example":"a pork chop"}]},{"word":"circle","senses":[{"pos":"n.","zh":"圓圈","en":"a round shape","example":"draw a circle"},{"pos":"n.","zh":"圈子","en":"a group of people","example":"a social circle"},{"pos":"v.","zh":"繞圈","en":"to move in a circle around something","example":"the plane circled the airport"}]},{"word":"claim","senses":[{"pos":"v.","zh":"聲稱","en":"to state something as true","example":"He claims to be innocent."},{"pos":"v.","zh":"索賠；要求","en":"to formally request something owed","example":"to claim insurance"},{"pos":"n.","zh":"主張；索賠","en":"a statement, or a formal request","example":"to file a claim"}]},{"word":"clash","senses":[{"pos":"n.","zh":"衝突","en":"a fight or disagreement","example":"a clash between fans"},{"pos":"v.","zh":"不協調；衝突","en":"to be in conflict","example":"The armies clashed violently."}]},{"word":"claw","senses":[{"pos":"n.","zh":"爪子","en":"a sharp nail on an animal's foot","example":"a cat's claws"},{"pos":"v.","zh":"抓；掙扎地取得","en":"to scratch, or to struggle to gain something","example":"to claw your way to the top"}]},{"word":"click","senses":[{"pos":"n./v.","zh":"喀嚓聲","en":"a short, sharp sound","example":"the click of a door"},{"pos":"v.","zh":"點擊（電腦）","en":"to press a computer button","example":"to click the link"},{"pos":"v.","zh":"意氣相投（口語）","en":"to instantly get along","example":"We just clicked."}]},{"word":"clip","senses":[{"pos":"n.","zh":"夾子","en":"a fastener","example":"a paper clip"},{"pos":"n.","zh":"片段","en":"a short video excerpt","example":"a movie clip"},{"pos":"v.","zh":"夾住；剪","en":"to attach with a clip, or to cut a small piece","example":"to clip the nametag on your shirt"}]},{"word":"clown","senses":[{"pos":"n.","zh":"小丑","en":"a circus performer","example":"a circus clown"},{"pos":"v.","zh":"耍寶（____ around）","en":"to behave foolishly","example":"stop clowning around"}]},{"word":"coach","senses":[{"pos":"n.","zh":"教練","en":"a sports trainer","example":"the basketball coach"},{"pos":"n.","zh":"長途巴士；馬車","en":"a bus, or a horse-drawn carriage","example":"travel by coach"},{"pos":"v.","zh":"訓練","en":"to train someone","example":"to coach the team"}]},{"word":"code","senses":[{"pos":"n.","zh":"規範","en":"a system of rules","example":"a dress code"},{"pos":"n.","zh":"密碼；程式碼","en":"a secret system of symbols, or computer instructions","example":"to crack the code"},{"pos":"v.","zh":"寫程式","en":"to write software","example":"learn to code"}]},{"word":"coin","senses":[{"pos":"n.","zh":"硬幣","en":"metal money","example":"a gold coin"},{"pos":"v.","zh":"創造（新詞）","en":"to invent a new word or phrase","example":"to coin a new term"}]},{"word":"comb","senses":[{"pos":"n.","zh":"梳子","en":"a hair tool","example":"to run a comb through your hair"},{"pos":"v.","zh":"徹底搜查","en":"to search thoroughly","example":"to comb the area for clues"}]},{"word":"command","senses":[{"pos":"n.","zh":"命令","en":"an order","example":"to obey a command"},{"pos":"n.","zh":"掌握；精通","en":"mastery of something","example":"a good command of English"},{"pos":"v.","zh":"命令；控制","en":"to order, or to be in charge of","example":"to command the troops"}]},{"word":"comment","senses":[{"pos":"v.","zh":"評論","en":"to give your opinion","example":"to comment on the news"},{"pos":"n.","zh":"評論","en":"a remark","example":"to make a comment"}]},{"word":"concern","senses":[{"pos":"n.","zh":"擔憂","en":"worry","example":"a growing concern"},{"pos":"v.","zh":"使擔憂；與...有關","en":"to worry, or to be relevant to","example":"This matter concerns you."}]},{"word":"condition","senses":[{"pos":"n.","zh":"狀況","en":"a state","example":"in good condition"},{"pos":"n.","zh":"條件","en":"a requirement","example":"on one condition"},{"pos":"v.","zh":"訓練；使習慣","en":"to train someone to expect or accept something","example":"conditioned to respond quickly"}]},{"word":"conflict","senses":[{"pos":"v.","zh":"衝突","en":"to disagree or clash","example":"Their schedules conflict, so they can't meet easily."},{"pos":"n.","zh":"衝突","en":"a disagreement or fight","example":"a conflict of interest"}]},{"word":"contact","senses":[{"pos":"n.","zh":"聯繫；接觸","en":"connection or touch","example":"to stay in contact"},{"pos":"n.","zh":"熟人","en":"a person you know professionally","example":"a business contact"},{"pos":"v.","zh":"聯絡","en":"to communicate with","example":"Contact me later."}]},{"word":"contract","senses":[{"pos":"n.","zh":"合約","en":"an agreement","example":"sign a contract"},{"pos":"v.","zh":"訂約","en":"to make a formal agreement","example":"contract with a supplier"},{"pos":"v.","zh":"收縮","en":"to shrink or become smaller","example":"metal contracts in the cold"},{"pos":"v.","zh":"感染（疾病）","en":"to catch a disease","example":"to contract an illness"}]},{"word":"cook","senses":[{"pos":"v.","zh":"烹飪","en":"to prepare food","example":"to cook dinner"},{"pos":"n.","zh":"廚師","en":"a person who cooks","example":"she's the cook"}]},{"word":"correct","senses":[{"pos":"adj.","zh":"正確的","en":"right","example":"the correct answer"},{"pos":"v.","zh":"更正","en":"to fix an error","example":"to correct the mistake"}]}]
+</script>
+<script>
+(function(){
+  "use strict";
+
+  var VOCAB = JSON.parse(document.getElementById('vocab-data').textContent);
+
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i];a[i]=a[j];a[j]=t;
+    }
+    return a;
+  }
+
+  // Flat pool of all senses, tagged with their owning word index, for distractor sourcing.
+  var ALL_SENSES = [];
+  function rebuildSenses(){
+    ALL_SENSES = [];
+    VOCAB.forEach(function(w, wi){
+      w.senses.forEach(function(s, si){
+        ALL_SENSES.push({wordIndex:wi, senseIndex:si, word:w.word, pos:s.pos, zh:s.zh, en:s.en, example:s.example});
+      });
+    });
+  }
+  rebuildSenses();
+
+  // ---------- Mistake log (persisted where possible) ----------
+  var MISTAKE_KEY = 'lineup-mistake-log-v1';
+  var storageOK = (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function');
+  var mistakeLog = {};   // key -> {word,pos,zh,en,example,count,last}
+
+  function mistakeKey(s){ return s.word + '|' + s.pos + '|' + s.en; }
+
+  function saveMistakeLog(){
+    if(!storageOK) return;
+    try{
+      window.storage.set(MISTAKE_KEY, JSON.stringify(mistakeLog), false).catch(function(){});
+    }catch(e){}
+  }
+
+  function loadMistakeLog(){
+    if(!storageOK){ refreshMistakeCount(); return; }
+    try{
+      window.storage.get(MISTAKE_KEY, false).then(function(res){
+        if(res && res.value){
+          try{ mistakeLog = JSON.parse(res.value) || {}; }catch(e){ mistakeLog = {}; }
+        }
+        refreshMistakeCount();
+      }).catch(function(){ refreshMistakeCount(); });
+    }catch(e){ refreshMistakeCount(); }
+  }
+
+  function logMistake(s){
+    var key = mistakeKey(s);
+    var existing = mistakeLog[key];
+    mistakeLog[key] = {
+      word: s.word, pos: s.pos, zh: s.zh, en: s.en, example: s.example,
+      count: existing ? existing.count + 1 : 1,
+      last: Date.now()
+    };
+    saveMistakeLog();
+    refreshMistakeCount();
+  }
+
+  function mistakeCount(){ return Object.keys(mistakeLog).length; }
+
+  function refreshMistakeCount(){
+    var btn = document.getElementById('mistakes-btn');
+    if(!btn) return;
+    var n = mistakeCount();
+    btn.textContent = 'My Mistakes (' + n + ')';
+    btn.disabled = (n === 0);
+  }
+
+  // ---------- Chinese-gloss toggle ----------
+  var ZH_PREF_KEY = 'lineup-show-zh-v1';
+  var showChinese = true;
+  var zhToggleBtn = document.getElementById('zh-toggle');
+
+  function applyZhToggleUI(){
+    zhToggleBtn.setAttribute('aria-pressed', showChinese ? 'true':'false');
+    zhToggleBtn.textContent = showChinese ? 'ON':'OFF';
+  }
+
+  zhToggleBtn.addEventListener('click', function(){
+    showChinese = !showChinese;
+    applyZhToggleUI();
+    if(storageOK){
+      try{ window.storage.set(ZH_PREF_KEY, showChinese ? '1':'0', false).catch(function(){}); }catch(e){}
+    }
+  });
+
+  function loadZhPref(){
+    if(!storageOK) return;
+    try{
+      window.storage.get(ZH_PREF_KEY, false).then(function(res){
+        if(res && (res.value === '0' || res.value === '1')){
+          showChinese = (res.value === '1');
+          applyZhToggleUI();
+        }
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  var IRREGULAR_FORMS = {
+    spring: ['sprang','sprung'],
+    strike: ['struck'],
+    awake: ['awoke','awoken'],
+    freeze: ['froze','frozen']
+  };
+
+  function escapeRegex(s){
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function blankExample(word, example){
+    if(!example) return '';
+    var pat = new RegExp('\\b(' + escapeRegex(word) + '[a-zA-Z]*)\\b', 'gi');
+    if(pat.test(example)){
+      return example.replace(pat, '_____');
+    }
+    if(word.charAt(word.length-1) === 'e'){
+      var stem = word.slice(0, -1);
+      var pat2 = new RegExp('\\b(' + escapeRegex(stem) + '[a-zA-Z]*)\\b', 'gi');
+      if(pat2.test(example)){
+        return example.replace(pat2, '_____');
+      }
+    }
+    var forms = IRREGULAR_FORMS[word] || [];
+    for(var i=0;i<forms.length;i++){
+      var pat3 = new RegExp('\\b(' + escapeRegex(forms[i]) + '[a-zA-Z]*)\\b', 'gi');
+      if(pat3.test(example)){
+        return example.replace(pat3, '_____');
+      }
+    }
+    return example;
+  }
+
+  function buildLineup(wordIndex){
+    var w = VOCAB[wordIndex];
+    var correct = w.senses.map(function(s, si){
+      return {wordIndex:wordIndex, senseIndex:si, word:w.word, pos:s.pos, zh:s.zh, en:s.en, example:s.example, isCorrect:true};
+    });
+    var correctCount = correct.length;
+    var target = correctCount <= 1 ? 4 : Math.min(8, correctCount + 3);
+    var decoyNeed = Math.max(2, target - correctCount);
+
+    var decoyPool = shuffle(ALL_SENSES.filter(function(s){ return s.wordIndex !== wordIndex; }));
+    var seenText = {};
+    correct.forEach(function(c){ seenText[c.zh+'|'+c.en] = true; });
+    var decoys = [];
+    for(var i=0;i<decoyPool.length && decoys.length<decoyNeed;i++){
+      var d = decoyPool[i];
+      var key = d.zh+'|'+d.en;
+      if(seenText[key]) continue;
+      seenText[key] = true;
+      decoys.push({wordIndex:d.wordIndex, senseIndex:d.senseIndex, word:d.word, pos:d.pos, zh:d.zh, en:d.en, example:d.example, isCorrect:false});
+    }
+
+    return shuffle(correct.concat(decoys));
+  }
+
+  // ---------- State ----------
+  var state = {
+    queue: [],       // array of wordIndex
+    idx: 0,
+    solvedPerfect: 0,
+    totalHits: 0,
+    totalMissed: 0,
+    totalFalse: 0,
+    missedWords: [],   // wordIndex list not solved perfectly (deduped)
+    missedWordKeys: {},
+    lineup: [],
+    submitted: false
+  };
+
+  // ---------- Elements ----------
+  var screenSetup = document.getElementById('screen-setup');
+  var screenGame = document.getElementById('screen-game');
+  var screenSummary = document.getElementById('screen-summary');
+  var roundGrid = document.getElementById('round-grid');
+  var startBtn = document.getElementById('start-btn');
+  var editDbBtn = document.getElementById('edit-db-btn');
+  var screenEditor = document.getElementById('screen-editor');
+  var screenMistakes = document.getElementById('screen-mistakes');
+
+  var statProgress = document.getElementById('stat-progress');
+  var statScore = document.getElementById('stat-score');
+  var progressFill = document.getElementById('progress-fill');
+  var caseNo = document.getElementById('case-no');
+  var wordDisplay = document.getElementById('word-display');
+  var lineupEl = document.getElementById('lineup');
+  var submitBtn = document.getElementById('submit-btn');
+  var resultArea = document.getElementById('result-area');
+  var nextRow = document.getElementById('next-row');
+  var nextBtn = document.getElementById('next-btn');
+  var endGameBtn = document.getElementById('end-game-btn');
+
+  var finalScore = document.getElementById('final-score');
+  var finalTotal = document.getElementById('final-total');
+  var verdictEl = document.getElementById('verdict');
+  var statHits = document.getElementById('stat-hits');
+  var statMissed = document.getElementById('stat-missed');
+  var statFalse = document.getElementById('stat-false');
+  var missedWrap = document.getElementById('missed-wrap');
+  var reviewBtn = document.getElementById('review-btn');
+  var restartBtn = document.getElementById('restart-btn');
+
+  var selectedRound = 10;
+
+  function renderRoundGrid(){
+    var roundOptions = [
+      {label:'Quick', n:5},
+      {label:'Standard', n:10},
+      {label:'Deep Dive', n:20},
+      {label:'Full Roster', n:VOCAB.length}
+    ];
+    if(selectedRound > VOCAB.length) selectedRound = VOCAB.length;
+    roundGrid.innerHTML = '';
+    roundOptions.forEach(function(opt){
+      var btn = document.createElement('button');
+      btn.className = 'round-btn' + (opt.n===selectedRound ? ' selected' : '');
+      btn.innerHTML = '<span class="n">'+opt.n+'</span>'+opt.label;
+      btn.addEventListener('click', function(){
+        selectedRound = opt.n;
+        Array.prototype.forEach.call(roundGrid.children, function(c){ c.classList.remove('selected'); });
+        btn.classList.add('selected');
+      });
+      roundGrid.appendChild(btn);
+    });
+  }
+  renderRoundGrid();
+
+  function showScreen(name){
+    screenSetup.classList.toggle('hidden', name!=='setup');
+    screenGame.classList.toggle('hidden', name!=='game');
+    screenSummary.classList.toggle('hidden', name!=='summary');
+    screenEditor.classList.toggle('hidden', name!=='editor');
+    screenMistakes.classList.toggle('hidden', name!=='mistakes');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function startRound(wordIndexList, size){
+    var shuffled = shuffle(wordIndexList);
+    state.queue = shuffled.slice(0, Math.min(size, shuffled.length));
+    state.idx = 0;
+    state.solvedPerfect = 0;
+    state.totalHits = 0;
+    state.totalMissed = 0;
+    state.totalFalse = 0;
+    state.missedWords = [];
+    state.missedWordKeys = {};
+    showScreen('game');
+    renderWord();
+  }
+
+  startBtn.addEventListener('click', function(){
+    var all = VOCAB.map(function(w,i){ return i; });
+    startRound(all, selectedRound);
+  });
+
+  function renderWord(){
+    state.submitted = false;
+    var total = state.queue.length;
+    var wi = state.queue[state.idx];
+    var w = VOCAB[wi];
+
+    statProgress.textContent = 'WORD ' + (state.idx+1) + ' / ' + total;
+    statScore.textContent = 'SOLVED ' + state.solvedPerfect;
+    progressFill.style.width = ((state.idx)/total*100) + '%';
+
+    caseNo.textContent = 'SUSPECT #' + String(state.idx+1).padStart(3,'0');
+    wordDisplay.textContent = w.word;
+
+    state.lineup = buildLineup(wi);
+
+    lineupEl.innerHTML = '';
+    state.lineup.forEach(function(item, i){
+      var row = document.createElement('button');
+      row.className = 'suspect';
+      row.type = 'button';
+      row.setAttribute('aria-pressed','false');
+      row.innerHTML = '<span class="checkbox"></span>' +
+        '<span><span class="pos">'+item.pos+'</span><span class="en">'+item.en+'</span>' +
+        (showChinese ? '<span class="zh"> — '+item.zh+'</span>' : '') +
+        '<span class="ex-blank">'+escapeHtml(blankExample(item.word, item.example))+'</span></span>';
+      row.addEventListener('click', function(){
+        if(state.submitted) return;
+        item.checked = !item.checked;
+        row.classList.toggle('checked', item.checked);
+        row.setAttribute('aria-pressed', item.checked ? 'true':'false');
+        updateSubmitEnabled();
+      });
+      item.checked = false;
+      lineupEl.appendChild(row);
+    });
+
+    submitBtn.disabled = true;
+    resultArea.innerHTML = '';
+    nextRow.classList.add('hidden');
+  }
+
+  function updateSubmitEnabled(){
+    var anyChecked = state.lineup.some(function(it){ return it.checked; });
+    submitBtn.disabled = !anyChecked;
+  }
+
+  submitBtn.addEventListener('click', function(){
+    if(state.submitted) return;
+    state.submitted = true;
+    submitBtn.disabled = true;
+
+    var hits = 0, missed = 0, falseLeads = 0;
+    var rows = lineupEl.querySelectorAll('.suspect');
+    rows.forEach(function(row, i){
+      var item = state.lineup[i];
+      row.classList.add('locked');
+      var noteHtml = '';
+      if(item.isCorrect && item.checked){
+        row.classList.add('res-hit');
+        noteHtml = '<span class="tag-note hit">confirmed alias</span>';
+        hits++;
+      } else if(item.isCorrect && !item.checked){
+        row.classList.add('res-missed');
+        row.classList.add('checked');
+        noteHtml = '<span class="tag-note missed">overlooked — this was real</span>';
+        missed++;
+        logMistake(item);
+      } else if(!item.isCorrect && item.checked){
+        row.classList.add('res-falselead');
+        noteHtml = '<span class="tag-note false">false lead</span>';
+        falseLeads++;
+      } else {
+        row.classList.add('res-correctreject');
+      }
+      if(noteHtml){
+        var wrapper = row.children[1];
+        var noteEl = document.createElement('span');
+        noteEl.style.display = 'block';
+        noteEl.innerHTML = noteHtml;
+        wrapper.appendChild(noteEl);
+      }
+    });
+
+    state.totalHits += hits;
+    state.totalMissed += missed;
+    state.totalFalse += falseLeads;
+
+    var perfect = (missed === 0 && falseLeads === 0);
+    var wi = state.queue[state.idx];
+    if(perfect){
+      state.solvedPerfect++;
+      resultArea.innerHTML = '<div class="result-banner">Lineup confirmed — all aliases found</div>';
+    } else {
+      if(!state.missedWordKeys[wi]){
+        state.missedWordKeys[wi] = true;
+        state.missedWords.push(wi);
+      }
+      var cls = (falseLeads>0 && missed>0) ? 'miss' : 'partial';
+      var msg = falseLeads>0 && missed>0 ? 'Mixed file — false leads and overlooked aliases'
+               : falseLeads>0 ? 'False lead in the file'
+               : 'Case incomplete — an alias was overlooked';
+      resultArea.innerHTML = '<div class="result-banner '+cls+'">'+msg+'</div>';
+    }
+
+    statScore.textContent = 'SOLVED ' + state.solvedPerfect;
+    progressFill.style.width = ((state.idx+1)/state.queue.length*100) + '%';
+    nextRow.classList.remove('hidden');
+  });
+
+  nextBtn.addEventListener('click', function(){
+    state.idx++;
+    if(state.idx >= state.queue.length){
+      showSummary();
+    } else {
+      renderWord();
+    }
+  });
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showSummary(){
+    showScreen('summary');
+    var total = state.queue.length;
+    finalScore.textContent = state.solvedPerfect;
+    finalTotal.textContent = ' / ' + total;
+
+    var pct = total ? state.solvedPerfect/total : 0;
+    var verdict;
+    if(pct === 1) verdict = 'FLAWLESS ROSTER — EVERY ALIAS FOUND';
+    else if(pct >= 0.8) verdict = 'SHARP EYE — NEARLY AIRTIGHT';
+    else if(pct >= 0.5) verdict = 'SOLID WORK — SOME FILES REOPENED';
+    else verdict = 'BACK TO THE ARCHIVES, ROOKIE';
+    verdictEl.textContent = verdict;
+
+    statHits.textContent = state.totalHits;
+    statMissed.textContent = state.totalMissed;
+    statFalse.textContent = state.totalFalse;
+
+    if(state.missedWords.length === 0){
+      missedWrap.innerHTML = '<div class="empty-missed">No reopened files. Every lineup was closed perfectly.</div>';
+      reviewBtn.classList.add('hidden');
+    } else {
+      reviewBtn.classList.remove('hidden');
+      var ul = document.createElement('ul');
+      ul.className = 'missed-list';
+      state.missedWords.forEach(function(wi){
+        var w = VOCAB[wi];
+        var li = document.createElement('li');
+        var sensesHtml = w.senses.map(function(s){
+          return '<span class="ms"><span class="p">'+s.pos+'</span> '+escapeHtml(s.en)+(showChinese ? ' — '+escapeHtml(s.zh) : '')+'</span>';
+        }).join('');
+        li.innerHTML = '<span class="mw">'+w.word+'</span>' + sensesHtml;
+        ul.appendChild(li);
+      });
+      missedWrap.innerHTML = '';
+      missedWrap.appendChild(ul);
+    }
+  }
+
+  reviewBtn.addEventListener('click', function(){
+    var pool = state.missedWords.slice();
+    startRound(pool, pool.length);
+  });
+
+  restartBtn.addEventListener('click', function(){
+    showScreen('setup');
+  });
+
+  endGameBtn.addEventListener('click', function(){
+    if(!confirm('End this round now and return to the menu? Progress on the current round will be lost, but anything already logged in My Mistakes stays saved.')) return;
+    showScreen('setup');
+  });
+
+  // ---------- Editor ----------
+  var editorList = document.getElementById('editor-list');
+  var editorSearch = document.getElementById('editor-search');
+  var editorMeta = document.getElementById('editor-meta');
+  var addWordBtn = document.getElementById('add-word-btn');
+  var editorDoneBtn = document.getElementById('editor-done-btn');
+
+  function renderEditorMeta(){
+    var senseCount = ALL_SENSES.length;
+    editorMeta.textContent = VOCAB.length + ' words · ' + senseCount + ' meanings on file';
+  }
+
+  function renderEditor(filterText){
+    editorList.innerHTML = '';
+    var q = (filterText||'').trim().toLowerCase();
+    VOCAB.forEach(function(w, wi){
+      if(q && w.word.toLowerCase().indexOf(q) === -1) return;
+      editorList.appendChild(buildWordBlock(w, wi));
+    });
+    renderEditorMeta();
+  }
+
+  function buildWordBlock(w, wi){
+    var block = document.createElement('div');
+    block.className = 'editor-word-block';
+
+    var head = document.createElement('div');
+    head.className = 'editor-word-head';
+    var wordInput = document.createElement('input');
+    wordInput.className = 'editor-word-input';
+    wordInput.value = w.word;
+    wordInput.setAttribute('aria-label','Word');
+    wordInput.addEventListener('input', function(){ VOCAB[wi].word = wordInput.value; });
+    var delWordBtn = document.createElement('button');
+    delWordBtn.className = 'editor-del-word';
+    delWordBtn.textContent = 'Delete word';
+    delWordBtn.addEventListener('click', function(){
+      if(!confirm('Remove "'+VOCAB[wi].word+'" and all its meanings?')) return;
+      VOCAB.splice(wi,1);
+      rebuildSenses();
+      renderEditor(editorSearch.value);
+    });
+    head.appendChild(wordInput);
+    head.appendChild(delWordBtn);
+    block.appendChild(head);
+
+    var labels = document.createElement('div');
+    labels.className = 'sense-labels';
+    labels.innerHTML = '<span>POS</span><span>English def.</span><span>中文</span><span></span>';
+    block.appendChild(labels);
+
+    w.senses.forEach(function(s, si){
+      block.appendChild(buildSenseRow(w, wi, si));
+    });
+
+    var addSenseBtn = document.createElement('button');
+    addSenseBtn.className = 'add-sense-btn';
+    addSenseBtn.textContent = '+ Add meaning';
+    addSenseBtn.addEventListener('click', function(){
+      VOCAB[wi].senses.push({pos:'n.', zh:'', en:'', example:''});
+      rebuildSenses();
+      renderEditor(editorSearch.value);
+    });
+    block.appendChild(addSenseBtn);
+
+    return block;
+  }
+
+  function buildSenseRow(w, wi, si){
+    var row = document.createElement('div');
+    row.className = 'sense-row';
+
+    var posInput = document.createElement('input');
+    posInput.className = 'pos-input';
+    posInput.value = w.senses[si].pos;
+    posInput.setAttribute('aria-label','Part of speech');
+    posInput.addEventListener('input', function(){ VOCAB[wi].senses[si].pos = posInput.value; });
+
+    var enInput = document.createElement('input');
+    enInput.className = 'en-input';
+    enInput.value = w.senses[si].en;
+    enInput.setAttribute('aria-label','English definition');
+    enInput.addEventListener('input', function(){ VOCAB[wi].senses[si].en = enInput.value; });
+
+    var zhInput = document.createElement('input');
+    zhInput.className = 'zh-input';
+    zhInput.value = w.senses[si].zh;
+    zhInput.setAttribute('aria-label','Chinese gloss');
+    zhInput.addEventListener('input', function(){ VOCAB[wi].senses[si].zh = zhInput.value; });
+
+    var exInput = document.createElement('input');
+    exInput.className = 'example-input';
+    exInput.value = w.senses[si].example;
+    exInput.setAttribute('aria-label','Example sentence');
+    exInput.placeholder = 'example sentence';
+    exInput.addEventListener('input', function(){ VOCAB[wi].senses[si].example = exInput.value; });
+
+    var delBtn = document.createElement('button');
+    delBtn.className = 'del-sense';
+    delBtn.innerHTML = '✕';
+    delBtn.setAttribute('aria-label','Delete this meaning');
+    delBtn.addEventListener('click', function(){
+      if(VOCAB[wi].senses.length <= 1){
+        alert('Each word needs at least one meaning. Delete the word instead if you want it gone.');
+        return;
+      }
+      VOCAB[wi].senses.splice(si,1);
+      rebuildSenses();
+      renderEditor(editorSearch.value);
+    });
+
+    row.appendChild(posInput);
+    row.appendChild(enInput);
+    row.appendChild(zhInput);
+    row.appendChild(exInput);
+    row.appendChild(delBtn);
+    return row;
+  }
+
+  editDbBtn.addEventListener('click', function(){
+    editorSearch.value = '';
+    renderEditor('');
+    showScreen('editor');
+  });
+
+  editorSearch.addEventListener('input', function(){
+    renderEditor(editorSearch.value);
+  });
+
+  addWordBtn.addEventListener('click', function(){
+    VOCAB.unshift({word:'new word', senses:[{pos:'n.', zh:'', en:'', example:''}]});
+    rebuildSenses();
+    editorSearch.value = '';
+    renderEditor('');
+    var firstInput = editorList.querySelector('.editor-word-input');
+    if(firstInput){ firstInput.focus(); firstInput.select(); }
+  });
+
+  var exportXlsxBtn = document.getElementById('export-xlsx-btn');
+  exportXlsxBtn.addEventListener('click', function(){
+    if(typeof XLSX === 'undefined'){
+      alert('The Excel-writing library did not load (no internet connection?). Reconnect and try again.');
+      return;
+    }
+    var rows = [["Word","Part of speech","English definition","Chinese gloss (中文)","Example sentence"]];
+    VOCAB.forEach(function(w){
+      w.senses.forEach(function(s){
+        rows.push([w.word, s.pos, s.en, s.zh, s.example]);
+      });
+    });
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:16},{wch:14},{wch:40},{wch:22},{wch:46}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Word Database');
+    XLSX.writeFile(wb, 'lineup-vocab.xlsx');
+  });
+
+  // ---------- Excel (.xlsx) import ----------
+  var importXlsxBtn = document.getElementById('import-xlsx-btn');
+  var importXlsxFile = document.getElementById('import-xlsx-file');
+
+  importXlsxBtn.addEventListener('click', function(){
+    if(typeof XLSX === 'undefined'){
+      alert('The Excel-reading library did not load (no internet connection?). Reconnect and try again.');
+      return;
+    }
+    importXlsxFile.value = '';
+    importXlsxFile.click();
+  });
+
+  importXlsxFile.addEventListener('change', function(){
+    var file = importXlsxFile.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var data = new Uint8Array(reader.result);
+        var wb = XLSX.read(data, {type:'array'});
+        var sheetName = wb.SheetNames.indexOf('Word Database') !== -1 ? 'Word Database' : wb.SheetNames[0];
+        var ws = wb.Sheets[sheetName];
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, blankrows:false});
+
+        var wordsInOrder = [];
+        var byWord = {};
+        for(var i=1;i<rows.length;i++){   // skip header row
+          var r = rows[i];
+          if(!r || !r[0]) continue;
+          var word = String(r[0]).trim();
+          var pos = r[1]!=null ? String(r[1]).trim() : '';
+          var en = r[2]!=null ? String(r[2]).trim() : '';
+          var zh = r[3]!=null ? String(r[3]).trim() : '';
+          var example = r[4]!=null ? String(r[4]).trim() : '';
+          if(!word || !pos || !en) continue;
+          if(!byWord[word]){
+            byWord[word] = {word: word, senses: []};
+            wordsInOrder.push(word);
+          }
+          byWord[word].senses.push({pos:pos, zh:zh, en:en, example:example});
+        }
+
+        if(wordsInOrder.length === 0){
+          throw new Error('no valid rows found');
+        }
+
+        VOCAB = wordsInOrder.map(function(w){ return byWord[w]; });
+        rebuildSenses();
+        editorSearch.value = '';
+        renderEditor('');
+      } catch(err){
+        alert('Could not read that Excel file. Make sure it has columns in this order: Word, Part of speech, English definition, Chinese gloss, Example sentence — with a header row on top. No changes were made.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  editorDoneBtn.addEventListener('click', function(){
+    rebuildSenses();
+    renderRoundGrid();
+    showScreen('setup');
+  });
+
+  // ---------- My Mistakes ----------
+  var mistakesBtn = document.getElementById('mistakes-btn');
+  var mistakesList = document.getElementById('mistakes-list');
+  var mistakesMeta = document.getElementById('mistakes-meta');
+  var mistakesEmpty = document.getElementById('mistakes-empty');
+  var practiceMistakesBtn = document.getElementById('practice-mistakes-btn');
+  var exportMistakesBtn = document.getElementById('export-mistakes-btn');
+  var importMistakesBtn = document.getElementById('import-mistakes-btn');
+  var importMistakesFile = document.getElementById('import-mistakes-file');
+  var clearMistakesBtn = document.getElementById('clear-mistakes-btn');
+  var mistakesBackBtn = document.getElementById('mistakes-back-btn');
+  var mistakesStorageNote = document.getElementById('mistakes-storage-note');
+
+  function sortedMistakes(){
+    var arr = Object.keys(mistakeLog).map(function(k){ return mistakeLog[k]; });
+    arr.sort(function(a,b){ return b.count - a.count || b.last - a.last; });
+    return arr;
+  }
+
+  function renderMistakes(){
+    var arr = sortedMistakes();
+    mistakesMeta.textContent = arr.length + ' meaning' + (arr.length===1?'':'s') + ' tracked';
+    mistakesStorageNote.textContent = storageOK
+      ? 'Saved automatically in this environment.'
+      : 'Not saved automatically here — export before you close this tab.';
+    mistakesList.innerHTML = '';
+    if(arr.length === 0){
+      mistakesEmpty.classList.remove('hidden');
+      practiceMistakesBtn.classList.add('hidden');
+    } else {
+      mistakesEmpty.classList.add('hidden');
+      practiceMistakesBtn.classList.remove('hidden');
+      arr.forEach(function(m){
+        var li = document.createElement('li');
+        li.innerHTML = '<span class="mw">'+m.word+'</span> <span class="mp">'+m.pos+'</span>' +
+          ' <span class="mcount">×'+m.count+'</span>' +
+          '<span class="md">'+escapeHtml(m.en)+(showChinese ? ' — '+escapeHtml(m.zh) : '')+'</span>';
+        mistakesList.appendChild(li);
+      });
+    }
+  }
+
+  mistakesBtn.addEventListener('click', function(){
+    renderMistakes();
+    showScreen('mistakes');
+  });
+
+  mistakesBackBtn.addEventListener('click', function(){
+    showScreen('setup');
+  });
+
+  practiceMistakesBtn.addEventListener('click', function(){
+    var arr = sortedMistakes();
+    if(arr.length === 0) return;
+    var wordNames = {};
+    var pool = [];
+    arr.forEach(function(m){
+      if(wordNames[m.word]) return;
+      var wi = VOCAB.findIndex(function(w){ return w.word === m.word; });
+      if(wi === -1) return;
+      wordNames[m.word] = true;
+      pool.push(wi);
+    });
+    if(pool.length === 0){
+      alert('None of the logged words are in the current database anymore.');
+      return;
+    }
+    startRound(pool, pool.length);
+  });
+
+  exportMistakesBtn.addEventListener('click', function(){
+    var arr = sortedMistakes();
+    var blob = new Blob([JSON.stringify(arr, null, 1)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-mistake-log.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  importMistakesBtn.addEventListener('click', function(){
+    importMistakesFile.value = '';
+    importMistakesFile.click();
+  });
+
+  importMistakesFile.addEventListener('change', function(){
+    var file = importMistakesFile.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        if(!Array.isArray(parsed)) throw new Error('not an array');
+        var rebuilt = {};
+        parsed.forEach(function(m){
+          if(typeof m.word !== 'string' || typeof m.pos !== 'string' || typeof m.en !== 'string') throw new Error('bad entry');
+          var key = mistakeKey(m);
+          rebuilt[key] = {
+            word: m.word,
+            pos: m.pos,
+            zh: typeof m.zh === 'string' ? m.zh : '',
+            en: m.en,
+            example: typeof m.example === 'string' ? m.example : '',
+            count: typeof m.count === 'number' ? m.count : 1,
+            last: typeof m.last === 'number' ? m.last : Date.now()
+          };
+        });
+        mistakeLog = rebuilt;
+        saveMistakeLog();
+        refreshMistakeCount();
+        renderMistakes();
+      } catch(err){
+        alert('That file doesn\'t look like a valid mistake log export. No changes were made.');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  clearMistakesBtn.addEventListener('click', function(){
+    if(Object.keys(mistakeLog).length === 0) return;
+    if(!confirm('Clear your entire mistake log? This can\'t be undone.')) return;
+    mistakeLog = {};
+    saveMistakeLog();
+    refreshMistakeCount();
+    renderMistakes();
+  });
+
+  loadMistakeLog();
+  applyZhToggleUI();
+  loadZhPref();
+
+})();
+
+</script>
+</body>
+</html>
