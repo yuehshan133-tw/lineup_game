@@ -419,6 +419,31 @@ body{
   cursor:pointer;
   white-space:nowrap;
 }
+.mistake-section{
+  margin-bottom:22px;
+  padding-bottom:6px;
+}
+.mistake-section-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  border-bottom:1px dashed var(--line);
+  padding-bottom:6px;
+  margin-bottom:8px;
+}
+.mistake-section-title{
+  font-family:'Special Elite', monospace;
+  font-size:1rem;
+  color:var(--ink);
+}
+.mistake-section-count{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.78rem;
+  color:var(--ink-soft);
+}
+.mistake-section .missed-list{ margin-bottom:10px; }
+.mistake-section .missed-list li{ padding:8px 0; }
+
 .end-game-btn{
   display:block;
   width:100%;
@@ -639,12 +664,30 @@ body{
   <div id="screen-mistakes" class="hidden">
     <span class="folder-tab">Repeat Offenders</span>
     <div class="card">
-      <p class="intro-p">Every alias you overlook lands here. Meanings you keep missing float to the top — that's what's actually worth restudying.</p>
+      <p class="intro-p">Every alias you overlook lands here. Get it right once and it moves to <strong>To Be Learned</strong>; get it right again next time and it graduates to <strong>Learned</strong>. Miss it again at any point and it drops straight back to To Be Learned.</p>
       <div class="editor-meta" id="mistakes-meta"></div>
       <div class="editor-meta" id="mistakes-storage-note" style="margin-top:-10px;"></div>
-      <ul class="missed-list" id="mistakes-list"></ul>
-      <div class="empty-missed hidden" id="mistakes-empty">No mistakes logged yet — go process some words.</div>
-      <button class="primary-btn hidden" id="practice-mistakes-btn">Practice My Mistakes</button>
+
+      <div class="mistake-section">
+        <div class="mistake-section-head">
+          <span class="mistake-section-title">To Be Learned</span>
+          <span class="mistake-section-count" id="to-learn-count">0</span>
+        </div>
+        <ul class="missed-list" id="to-learn-list"></ul>
+        <div class="empty-missed hidden" id="to-learn-empty">Nothing here right now.</div>
+        <button class="primary-btn hidden" id="practice-to-learn-btn">Practice "To Be Learned"</button>
+      </div>
+
+      <div class="mistake-section">
+        <div class="mistake-section-head">
+          <span class="mistake-section-title">Learned</span>
+          <span class="mistake-section-count" id="learned-count">0</span>
+        </div>
+        <ul class="missed-list" id="learned-list"></ul>
+        <div class="empty-missed hidden" id="learned-empty">Nothing marked learned yet.</div>
+        <button class="ghost-btn hidden" id="review-learned-btn">Review "Learned"</button>
+      </div>
+
       <button class="ghost-btn" id="export-mistakes-btn">Export Mistake Log</button>
       <button class="ghost-btn" id="import-mistakes-btn">Upload Mistake Log</button>
       <input type="file" id="import-mistakes-file" accept="application/json" class="hidden">
@@ -750,9 +793,25 @@ body{
   // ---------- Mistake log (persisted where possible) ----------
   var MISTAKE_KEY = 'lineup-mistake-log-v1';
   var storageOK = (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function');
-  var mistakeLog = {};   // key -> {word,pos,zh,en,example,count,last}
+  var mistakeLog = {};   // key -> {word,pos,zh,en,example,wrong,correct,correctStreak,tag,last}
 
   function mistakeKey(s){ return s.word + '|' + s.pos + '|' + s.en; }
+
+  // Fills in any fields missing from older saved/imported log formats.
+  function normalizeMistakeEntry(m){
+    return {
+      word: m.word,
+      pos: m.pos,
+      zh: typeof m.zh === 'string' ? m.zh : '',
+      en: m.en,
+      example: typeof m.example === 'string' ? m.example : '',
+      wrong: typeof m.wrong === 'number' ? m.wrong : (typeof m.count === 'number' ? m.count : 1),
+      correct: typeof m.correct === 'number' ? m.correct : 0,
+      correctStreak: typeof m.correctStreak === 'number' ? m.correctStreak : 0,
+      tag: (m.tag === 'learned') ? 'learned' : 'to_learn',
+      last: typeof m.last === 'number' ? m.last : Date.now()
+    };
+  }
 
   function saveMistakeLog(){
     if(!storageOK) return;
@@ -766,23 +825,58 @@ body{
     try{
       window.storage.get(MISTAKE_KEY, false).then(function(res){
         if(res && res.value){
-          try{ mistakeLog = JSON.parse(res.value) || {}; }catch(e){ mistakeLog = {}; }
+          try{
+            var parsed = JSON.parse(res.value) || {};
+            var normalized = {};
+            Object.keys(parsed).forEach(function(k){ normalized[k] = normalizeMistakeEntry(parsed[k]); });
+            mistakeLog = normalized;
+          }catch(e){ mistakeLog = {}; }
         }
         refreshMistakeCount();
       }).catch(function(){ refreshMistakeCount(); });
     }catch(e){ refreshMistakeCount(); }
   }
 
+  // Called on a wrong answer. Always (re)files the entry under "To Be
+  // Learned" and resets its correct-answer streak, whether it's a brand
+  // new mistake or one that had previously been marked Learned.
   function logMistake(s){
     var key = mistakeKey(s);
     var existing = mistakeLog[key];
     mistakeLog[key] = {
       word: s.word, pos: s.pos, zh: s.zh, en: s.en, example: s.example,
-      count: existing ? existing.count + 1 : 1,
+      wrong: existing ? existing.wrong + 1 : 1,
+      correct: existing ? existing.correct : 0,
+      correctStreak: 0,
+      tag: 'to_learn',
       last: Date.now()
     };
     saveMistakeLog();
     refreshMistakeCount();
+  }
+
+  // Called when a sense that's currently in the mistake log gets answered
+  // correctly. First correct answer since the last mistake files it under
+  // "To Be Learned"; a second correct answer in a row promotes it to
+  // "Learned". A wrong answer at any point resets the streak (see logMistake).
+  // Returns 'learned' | 'progress' | null (null = this sense isn't tracked).
+  function registerCorrect(s){
+    var key = mistakeKey(s);
+    var existing = mistakeLog[key];
+    if(!existing) return null;
+    existing.correct = (existing.correct || 0) + 1;
+    existing.correctStreak = (existing.correctStreak || 0) + 1;
+    existing.last = Date.now();
+    var justLearned = false;
+    if(existing.correctStreak >= 2){
+      if(existing.tag !== 'learned') justLearned = true;
+      existing.tag = 'learned';
+    } else {
+      existing.tag = 'to_learn';
+    }
+    saveMistakeLog();
+    refreshMistakeCount();
+    return justLearned ? 'learned' : 'progress';
   }
 
   function mistakeCount(){ return Object.keys(mistakeLog).length; }
@@ -792,7 +886,6 @@ body{
     if(!btn) return;
     var n = mistakeCount();
     btn.textContent = 'My Mistakes (' + n + ')';
-    btn.disabled = (n === 0);
   }
 
   // ---------- Chinese-gloss toggle ----------
@@ -1041,7 +1134,14 @@ body{
       var noteHtml = '';
       if(item.isCorrect && item.checked){
         row.classList.add('res-hit');
-        noteHtml = '<span class="tag-note hit">confirmed alias</span>';
+        var progressState = registerCorrect(item);
+        if(progressState === 'learned'){
+          noteHtml = '<span class="tag-note hit">confirmed alias — learned! moved to the Learned list</span>';
+        } else if(progressState === 'progress'){
+          noteHtml = '<span class="tag-note hit">confirmed alias — filed under To Be Learned, one more to go</span>';
+        } else {
+          noteHtml = '<span class="tag-note hit">confirmed alias</span>';
+        }
         hits++;
       } else if(item.isCorrect && !item.checked){
         row.classList.add('res-missed');
@@ -1380,44 +1480,65 @@ body{
 
   // ---------- My Mistakes ----------
   var mistakesBtn = document.getElementById('mistakes-btn');
-  var mistakesList = document.getElementById('mistakes-list');
   var mistakesMeta = document.getElementById('mistakes-meta');
-  var mistakesEmpty = document.getElementById('mistakes-empty');
-  var practiceMistakesBtn = document.getElementById('practice-mistakes-btn');
+  var mistakesStorageNote = document.getElementById('mistakes-storage-note');
+  var toLearnList = document.getElementById('to-learn-list');
+  var toLearnEmpty = document.getElementById('to-learn-empty');
+  var toLearnCount = document.getElementById('to-learn-count');
+  var practiceToLearnBtn = document.getElementById('practice-to-learn-btn');
+  var learnedList = document.getElementById('learned-list');
+  var learnedEmpty = document.getElementById('learned-empty');
+  var learnedCount = document.getElementById('learned-count');
+  var reviewLearnedBtn = document.getElementById('review-learned-btn');
   var exportMistakesBtn = document.getElementById('export-mistakes-btn');
   var importMistakesBtn = document.getElementById('import-mistakes-btn');
   var importMistakesFile = document.getElementById('import-mistakes-file');
   var clearMistakesBtn = document.getElementById('clear-mistakes-btn');
   var mistakesBackBtn = document.getElementById('mistakes-back-btn');
-  var mistakesStorageNote = document.getElementById('mistakes-storage-note');
 
-  function sortedMistakes(){
-    var arr = Object.keys(mistakeLog).map(function(k){ return mistakeLog[k]; });
-    arr.sort(function(a,b){ return b.count - a.count || b.last - a.last; });
+  function allMistakes(){
+    return Object.keys(mistakeLog).map(function(k){ return mistakeLog[k]; });
+  }
+
+  function mistakesByTag(tag){
+    var arr = allMistakes().filter(function(m){ return m.tag === tag; });
+    arr.sort(function(a,b){ return b.wrong - a.wrong || b.last - a.last; });
     return arr;
   }
 
-  function renderMistakes(){
-    var arr = sortedMistakes();
-    mistakesMeta.textContent = arr.length + ' meaning' + (arr.length===1?'':'s') + ' tracked';
-    mistakesStorageNote.textContent = storageOK
-      ? 'Saved automatically in this environment.'
-      : 'Not saved automatically here — export before you close this tab.';
-    mistakesList.innerHTML = '';
+  function renderMistakeList(arr, listEl, emptyEl, btnEl){
+    listEl.innerHTML = '';
     if(arr.length === 0){
-      mistakesEmpty.classList.remove('hidden');
-      practiceMistakesBtn.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      btnEl.classList.add('hidden');
     } else {
-      mistakesEmpty.classList.add('hidden');
-      practiceMistakesBtn.classList.remove('hidden');
+      emptyEl.classList.add('hidden');
+      btnEl.classList.remove('hidden');
       arr.forEach(function(m){
         var li = document.createElement('li');
         li.innerHTML = '<span class="mw">'+m.word+'</span> <span class="mp">'+m.pos+'</span>' +
-          ' <span class="mcount">×'+m.count+'</span>' +
+          ' <span class="mcount">✗'+m.wrong+' ✓'+(m.correct||0)+'</span>' +
           '<span class="md">'+escapeHtml(m.en)+(showChinese ? ' — '+escapeHtml(m.zh) : '')+'</span>';
-        mistakesList.appendChild(li);
+        listEl.appendChild(li);
       });
     }
+  }
+
+  function renderMistakes(){
+    var toLearn = mistakesByTag('to_learn');
+    var learned = mistakesByTag('learned');
+    var total = toLearn.length + learned.length;
+
+    mistakesMeta.textContent = total + ' meaning' + (total===1?'':'s') + ' tracked';
+    mistakesStorageNote.textContent = storageOK
+      ? 'Saved automatically in this environment.'
+      : 'Not saved automatically here — export before you close this tab.';
+
+    toLearnCount.textContent = toLearn.length;
+    learnedCount.textContent = learned.length;
+
+    renderMistakeList(toLearn, toLearnList, toLearnEmpty, practiceToLearnBtn);
+    renderMistakeList(learned, learnedList, learnedEmpty, reviewLearnedBtn);
   }
 
   mistakesBtn.addEventListener('click', function(){
@@ -1429,9 +1550,7 @@ body{
     showScreen('setup');
   });
 
-  practiceMistakesBtn.addEventListener('click', function(){
-    var arr = sortedMistakes();
-    if(arr.length === 0) return;
+  function wordPoolFrom(arr){
     var wordNames = {};
     var pool = [];
     arr.forEach(function(m){
@@ -1441,15 +1560,29 @@ body{
       wordNames[m.word] = true;
       pool.push(wi);
     });
+    return pool;
+  }
+
+  practiceToLearnBtn.addEventListener('click', function(){
+    var pool = wordPoolFrom(mistakesByTag('to_learn'));
     if(pool.length === 0){
-      alert('None of the logged words are in the current database anymore.');
+      alert('None of these words are in the current database anymore.');
+      return;
+    }
+    startRound(pool, pool.length);
+  });
+
+  reviewLearnedBtn.addEventListener('click', function(){
+    var pool = wordPoolFrom(mistakesByTag('learned'));
+    if(pool.length === 0){
+      alert('None of these words are in the current database anymore.');
       return;
     }
     startRound(pool, pool.length);
   });
 
   exportMistakesBtn.addEventListener('click', function(){
-    var arr = sortedMistakes();
+    var arr = allMistakes();
     var blob = new Blob([JSON.stringify(arr, null, 1)], {type:'application/json'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -1478,15 +1611,7 @@ body{
         parsed.forEach(function(m){
           if(typeof m.word !== 'string' || typeof m.pos !== 'string' || typeof m.en !== 'string') throw new Error('bad entry');
           var key = mistakeKey(m);
-          rebuilt[key] = {
-            word: m.word,
-            pos: m.pos,
-            zh: typeof m.zh === 'string' ? m.zh : '',
-            en: m.en,
-            example: typeof m.example === 'string' ? m.example : '',
-            count: typeof m.count === 'number' ? m.count : 1,
-            last: typeof m.last === 'number' ? m.last : Date.now()
-          };
+          rebuilt[key] = normalizeMistakeEntry(m);
         });
         mistakeLog = rebuilt;
         saveMistakeLog();
